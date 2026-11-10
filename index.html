@@ -1,0 +1,3136 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Linearthinking</title>
+<style>
+  /* Layout concept: a single-column reading column with a sticky top bar; exercises render as
+     inline tag-chips on top of the passage sentence itself, so the student is always looking at
+     the real sentence, never an abstracted list. */
+  :root{
+    --bg:#f5f6fb; --surface:#ffffff; --surface-2:#eef0f7; --border:#d8dbea;
+    --text:#1b1f2e; --text-dim:#5b6178; --accent:#4338ca; --accent-soft:#eceafe;
+    --accent-2:#0f766e;
+    --main-bg:#fff6cf; --main-border:#e3b400; --main-text:#6b5300;
+    --detail-bg:#d8f3f6; --detail-border:#1f9aae; --detail-text:#0c5a66;
+    --rel-text:#c0392b; --rel-bg:#fdeceb;
+    --ok:#1f9254; --bad:#c0392b;
+    --hl-bg:#ffd6f0; --hl-text:#d6127e; --hl-wash:rgba(214,18,126,.09);
+    --sec-text:rgba(192,57,43,.5);
+    --idea-yellow-bg:#fff0a0; --idea-yellow-text:#5c4a00;
+    --idea-blue-bg:#cfe3ff; --idea-blue-text:#17408f;
+    --idea-green-bg:#d7f5d0; --idea-green-text:#1f6b1f;
+    --idea-red-bg:#ffd9d9; --idea-red-text:#8f1f1f;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#11131c; --surface:#181b29; --surface-2:#1f2333; --border:#2d3146;
+      --text:#e7e9f2; --text-dim:#9a9fb8; --accent:#9b8cf2; --accent-soft:#242049;
+      --accent-2:#2dd4bf;
+      --main-bg:#473a0a; --main-border:#caa400; --main-text:#f5dd80;
+      --detail-bg:#0d3a40; --detail-border:#2bb6c9; --detail-text:#a6e8ef;
+      --rel-text:#ff8f82; --rel-bg:#3a1f1c;
+      --ok:#5fd394; --bad:#ff8f82;
+      --hl-bg:#5c1a45; --hl-text:#ffb3e6; --hl-wash:rgba(255,179,230,.14);
+      --sec-text:rgba(255,143,130,.55);
+      --idea-yellow-bg:#5c4b05; --idea-yellow-text:#ffe79a;
+      --idea-blue-bg:#17335c; --idea-blue-text:#a8caff;
+      --idea-green-bg:#1f3d20; --idea-green-text:#9fe6a0;
+      --idea-red-bg:#4a1f1f; --idea-red-text:#ffb3b3;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#11131c; --surface:#181b29; --surface-2:#1f2333; --border:#2d3146;
+    --text:#e7e9f2; --text-dim:#9a9fb8; --accent:#9b8cf2; --accent-soft:#242049;
+    --accent-2:#2dd4bf;
+    --main-bg:#473a0a; --main-border:#caa400; --main-text:#f5dd80;
+    --detail-bg:#0d3a40; --detail-border:#2bb6c9; --detail-text:#a6e8ef;
+    --rel-text:#ff8f82; --rel-bg:#3a1f1c;
+    --ok:#5fd394; --bad:#ff8f82;
+    --hl-bg:#5c1a45; --hl-text:#ffb3e6; --hl-wash:rgba(255,179,230,.14);
+    --sec-text:rgba(255,143,130,.55);
+    --idea-yellow-bg:#5c4b05; --idea-yellow-text:#ffe79a;
+    --idea-blue-bg:#17335c; --idea-blue-text:#a8caff;
+    --idea-green-bg:#1f3d20; --idea-green-text:#9fe6a0;
+    --idea-red-bg:#4a1f1f; --idea-red-text:#ffb3b3;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:"Source Sans 3", ui-sans-serif, system-ui, sans-serif;
+    padding-left:max(16px, env(safe-area-inset-left,0px));
+    padding-right:max(16px, env(safe-area-inset-right,0px));
+  }
+  h1,h2,h3{font-family:"Fraunces", Georgia, serif; text-wrap:balance; margin:0;}
+  .mono{font-family:"IBM Plex Mono", ui-monospace, monospace;}
+  a{color:var(--accent);}
+
+  .wrap{width:70%; margin:0 auto; padding:20px 0 48px;}
+  @media (max-width:900px){
+    .wrap{width:100%; padding:20px 12px 48px;}
+  }
+
+  header.top{
+    position:sticky; top:env(safe-area-inset-top,0px); z-index:10;
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding-block:12px; margin-bottom:18px;
+    background:var(--bg);
+    border-bottom:1px solid var(--border);
+  }
+  body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg);}
+  header.top .brand{display:flex; align-items:baseline; gap:8px; min-width:0;}
+  header.top h1{font-size:20px; font-weight:600;}
+  header.top .tag{font-size:12px; color:var(--text-dim); font-style:italic;}
+  nav.tabs{display:flex; gap:6px; flex-wrap:wrap;}
+  nav.tabs button{
+    border:1px solid var(--border); background:var(--surface); color:var(--text-dim);
+    padding:7px 14px; border-radius:999px; font-size:13px; cursor:pointer; font-weight:600;
+  }
+  nav.tabs button.active{background:var(--accent); border-color:var(--accent); color:#fff;}
+
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px 20px;}
+  .stack{display:flex; flex-direction:column; gap:14px;}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  .muted{color:var(--text-dim); font-size:14px;}
+  .intro{font-size:14px; color:var(--text-dim); line-height:1.6; margin-bottom:18px;}
+  .intro b{color:var(--text);}
+
+  button.primary{
+    background:var(--accent); color:#fff; border:none; border-radius:10px;
+    padding:10px 18px; font-size:14px; font-weight:600; cursor:pointer;
+  }
+  button.primary:disabled{opacity:.5; cursor:not-allowed;}
+  button.ghost{
+    background:transparent; border:1px solid var(--border); color:var(--text);
+    border-radius:10px; padding:10px 16px; font-size:14px; cursor:pointer; font-weight:600;
+  }
+  button.ghost:hover{border-color:var(--accent); color:var(--accent);}
+
+  textarea, input[type=text]{
+    width:100%; background:var(--surface-2); border:1px solid var(--border); color:var(--text);
+    border-radius:10px; padding:10px 12px; font-size:14px; font-family:inherit;
+  }
+  label.field{display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:600; color:var(--text-dim);}
+
+  /* ---- Bank list ---- */
+  .bank-item{
+    display:flex; justify-content:space-between; align-items:center; gap:12px;
+    padding:14px 16px; border:1px solid var(--border); border-radius:12px; background:var(--surface);
+    cursor:pointer;
+  }
+  .bank-item:hover{border-color:var(--accent);}
+  .bank-item .title{font-weight:600; font-size:15px;}
+  .bank-item .src{font-size:12px; color:var(--text-dim); margin-top:2px;}
+  .bank-item .count{font-size:12px; color:var(--accent); font-weight:700; white-space:nowrap;}
+  .empty-state{padding:28px 16px; text-align:center; color:var(--text-dim); font-size:14px;}
+
+  /* ---- Passage text ---- */
+  .passage-text{font-size:16px; line-height:1.8; font-family:"Source Sans 3", serif;}
+
+  /* ---- Step heading ---- */
+  .step-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:6px;}
+  .step-head h2{font-size:17px;}
+  .score-pill{
+    font-size:12px; font-weight:700; padding:4px 10px; border-radius:999px;
+    background:var(--surface-2); color:var(--text-dim);
+  }
+  .score-pill.ok{background:rgba(31,146,84,.15); color:var(--ok);}
+
+  /* ---- Sentence block (step 1) ---- */
+  .sentence-block{padding:14px 0; border-bottom:1px dashed var(--border);}
+  .sentence-block:last-child{border-bottom:none;}
+  .sentence-wrap{display:flex; flex-wrap:wrap; gap:6px 0; font-size:16px; line-height:2.1;}
+  .chunk{
+    cursor:pointer; padding:2px 6px; border-radius:6px; border:1.5px dashed var(--border);
+    margin-right:4px; transition:background .1s;
+  }
+  .chunk.main{background:var(--main-bg); border-color:var(--main-border); border-style:solid; color:var(--main-text);}
+  .chunk.detail{background:var(--detail-bg); border-color:var(--detail-border); border-style:solid; color:var(--detail-text);}
+  .chunk.wrong{outline:2px solid var(--bad);}
+  .chunk.right{outline:2px solid var(--ok);}
+  .legend{display:flex; gap:14px; font-size:12px; color:var(--text-dim); margin-top:10px;}
+  .legend span{display:inline-flex; align-items:center; gap:5px;}
+  .swatch{width:10px; height:10px; border-radius:3px; display:inline-block;}
+
+  /* ---- Relation (step 2) ---- */
+  .rel-card{border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:10px; background:var(--surface);}
+  .rel-card .s-text{font-size:15px; margin-bottom:10px;}
+  .rel-choices{display:flex; gap:8px;}
+  .rel-choice{
+    flex:1; border:1.5px solid var(--border); background:var(--surface-2); border-radius:8px;
+    padding:8px 6px; text-align:center; cursor:pointer; font-size:13px; font-weight:700; color:var(--text-dim);
+  }
+  .rel-choice.selected{border-color:var(--accent); background:var(--accent-soft); color:var(--accent);}
+  .rel-choice.right{border-color:var(--ok); background:rgba(31,146,84,.12); color:var(--ok);}
+  .rel-choice.wrong{border-color:var(--bad); background:rgba(192,57,43,.12); color:var(--bad);}
+  .rel-feedback{margin-top:8px; font-size:13px; color:var(--rel-text); background:var(--rel-bg); padding:8px 10px; border-radius:8px;}
+  .topic-badge{display:inline-block; font-size:11px; font-weight:700; color:var(--accent); background:var(--accent-soft); padding:3px 9px; border-radius:999px; margin-bottom:8px;}
+
+  .main-idea-box{
+    border:1.5px solid var(--accent); border-radius:12px; padding:16px 18px; background:var(--accent-soft);
+    font-size:15px; font-weight:600; color:var(--text); line-height:1.6;
+  }
+  .main-idea-box .eyebrow{font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); font-weight:700; margin-bottom:6px;}
+
+  .toast{
+    position:fixed; bottom:max(20px, env(safe-area-inset-bottom,0px)); left:50%; transform:translateX(-50%);
+    background:var(--text); color:var(--bg); padding:10px 18px; border-radius:999px; font-size:13px;
+    opacity:0; transition:opacity .25s; pointer-events:none; z-index:50; max-width:90%; text-align:center;
+  }
+  .toast.show{opacity:1;}
+
+  .status-line{font-size:13px; color:var(--text-dim); display:flex; align-items:center; gap:8px;}
+  .spinner{width:14px; height:14px; border-radius:50%; border:2px solid var(--border); border-top-color:var(--accent); animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ---- Single-sentence annotation mode ---- */
+  .single-toolbar{display:flex; gap:10px; align-items:center; margin-bottom:18px; flex-wrap:wrap;}
+  .single-toolbar input[type=text]{flex:1; min-width:200px;}
+  .eye-btn{border:1px solid var(--border); background:var(--surface); border-radius:10px; padding:9px 14px; cursor:pointer; font-size:13px; font-weight:600; color:var(--text-dim); display:inline-flex; align-items:center; gap:6px;}
+  .eye-btn.active{border-color:var(--accent); color:var(--accent); background:var(--accent-soft);}
+  .eye-btn svg{flex:none;}
+
+  .sent-card{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px 44px 16px 18px; margin-bottom:22px; margin-top:12px; position:relative; max-width:760px; margin-left:auto; margin-right:auto;}
+  .sent-card .del-btn{position:absolute; top:10px; right:12px; background:none; border:none; color:var(--text-dim); font-size:18px; cursor:pointer; line-height:1; padding:4px;}
+  .sent-card .del-btn:hover{color:var(--bad);}
+  .sent-num{
+    position:absolute; top:-12px; left:-10px; width:27px; height:27px; border-radius:50%;
+    background:var(--accent); color:#fff; font-size:12px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 1px 4px rgba(0,0,0,.18);
+  }
+
+  .row1-line{font-size:17px; line-height:2.3;}
+  .tok{display:inline-block; cursor:pointer; padding:2px 2px; border-radius:5px; user-select:none;}
+  .tok:hover{background:var(--surface-2);}
+  /* A contiguous run of selected words is wrapped in one .sel-run pill (see buildTokHtml) so the
+     highlight reads as a single rounded, text-hugging capsule around the whole phrase -- not a row of
+     separate blocky rectangles -- matching Thầy's reference: one color (the pink/magenta already used
+     everywhere else as --hl-text), border only, fully rounded ends, snug padding. */
+  .sel-run{
+    display:inline-flex; align-items:baseline; gap:5px; cursor:pointer;
+    border:1.5px solid var(--hl-text); border-radius:999px; background:var(--hl-wash);
+    padding:1px 3px; margin:0 1px;
+  }
+  .tok.sel{background:transparent; color:var(--hl-text); padding:1px 0;}
+  .sel-run .tok.sel:hover{opacity:.65;}
+  /* Secondary ("phụ") highlight: Option/Alt+click marks a word or phrase as a lighter, supporting
+     detail rather than a main point -- shown as plain bracket marks around the run, not a pill, in a
+     much paler shade than the main pink highlight, with the text itself slightly faded (but still
+     legible, unlike the fully-greyed-out ".blurred" treatment for un-highlighted words once Simplified). */
+  .sel2-run{cursor:pointer;}
+  .sel2-bracket{color:var(--sec-text); font-weight:700;}
+  .tok.sel2{background:transparent; color:var(--sec-text); opacity:.85;}
+  .sel2-run .tok.sel2:hover{opacity:.6;}
+  .tok.blurred{color:var(--text-dim); opacity:.5; filter:saturate(.35); cursor:default;}
+  .tok.blurred:hover{background:none;}
+  .tok.locked{cursor:default;}
+  /* Live preview while Option/Alt-dragging from the first word of a phrase to the last -- painted
+     directly via classList during the drag (no state update/re-render per mouse-move tick), then
+     committed as an actual secondary selection on mouseup. */
+  .tok.drag-preview{background:var(--sec-text); border-radius:4px;}
+  /* Dragging from an already-secondary word instead erases the range -- shown as a dashed outline
+     (about to be removed) rather than a filled wash (about to be added). */
+  .tok.drag-erase{background:transparent; outline:1.5px dashed var(--sec-text); border-radius:4px;}
+
+  .check-fab{
+    display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%;
+    background:var(--accent); color:#fff; border:none; cursor:pointer; font-size:13px; margin-left:4px; vertical-align:middle;
+  }
+  .check-fab:hover{opacity:.88;}
+
+  .simplified-line{margin-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .simplified-label{font-size:12.5px; font-weight:700; letter-spacing:0; text-transform:none; color:var(--text-dim);}
+  .simplified-label::before{content:""; display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--hl-text); margin-right:6px; vertical-align:middle;}
+  .sim-chip{background:var(--hl-wash); color:var(--hl-text); border:1.5px solid var(--hl-text); border-radius:999px; padding:2px 9px; font-size:14px;}
+
+  .mi-row-wrap{margin-top:12px;}
+  .mi-label{font-size:12.5px; font-weight:700; letter-spacing:0; text-transform:none; color:var(--accent); margin-bottom:6px;}
+  .mi-label::before{content:""; display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent); margin-right:6px; vertical-align:middle;}
+  /* "Ẩn Simplified" mode: no Simplified line above, so the Main Idea label moves in line with its
+     boxes instead of sitting on its own row above them. */
+  .mi-row-wrap.mi-row-inline{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .mi-label-inline{font-size:12.5px; font-weight:700; letter-spacing:0; text-transform:none; color:var(--accent); white-space:nowrap;}
+  .mi-label-inline::before{content:""; display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent); margin-right:6px; vertical-align:middle;}
+  .mi-boxes{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .mi-box-wrap{position:relative; display:inline-flex;}
+  .mi-box{border:none; border-radius:9px; padding:9px 12px; font-size:14px; font-weight:600; width:100px; max-width:100%; font-family:inherit; box-shadow:0 1px 0 rgba(0,0,0,.05) inset;}
+  .mi-box:focus{outline:none; box-shadow:0 0 0 2px var(--accent);}
+  .mi-box.idea-yellow{background:var(--idea-yellow-bg); color:var(--idea-yellow-text);}
+  .mi-box.idea-blue{background:var(--idea-blue-bg); color:var(--idea-blue-text);}
+  .mi-box.idea-green{background:var(--idea-green-bg); color:var(--idea-green-text);}
+  .mi-box.idea-red{background:var(--idea-red-bg); color:var(--idea-red-text);}
+  .mi-box::placeholder{color:inherit; opacity:.45;}
+  .mi-remove{
+    position:absolute; top:-7px; right:-7px; width:17px; height:17px; border-radius:50%;
+    background:var(--surface); border:1px solid var(--border); color:var(--text-dim); font-size:11px;
+    line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;
+  }
+  .mi-remove:hover{color:var(--bad); border-color:var(--bad);}
+  .mi-add{
+    width:36px; height:36px; border-radius:8px; border:1.5px dashed var(--border); background:transparent;
+    color:var(--text-dim); font-size:18px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;
+  }
+  .mi-add:hover{border-color:var(--accent); color:var(--accent);}
+  /* Small "undo/redo"-style circular icon at the end of the original-sentence line, shown once that
+     sentence is Simplified/locked -- re-opens it for editing the bôi chọn. Replaces the old text link
+     that used to sit on its own line below the sentence. */
+  .edit-undo-btn{
+    display:inline-flex; align-items:center; justify-content:center; vertical-align:middle;
+    width:22px; height:22px; border-radius:50%; margin-left:6px; margin-bottom:2px;
+    background:var(--surface); border:1.5px solid var(--bad); color:var(--bad);
+    font-size:13px; line-height:1; cursor:pointer; padding:0;
+  }
+  .edit-undo-btn:hover{background:var(--bad); color:#fff;}
+
+  .note-wrap{margin-top:14px;}
+  .note-toolbar{display:flex; align-items:center; gap:6px; margin-bottom:8px; flex-wrap:wrap;}
+  .note-toolbar button{
+    width:32px; height:30px; border-radius:7px; border:1px solid var(--border); background:var(--surface-2);
+    color:var(--text); font-size:14px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; padding:0;
+  }
+  .note-toolbar button:hover{border-color:var(--accent); color:var(--accent);}
+  .note-toolbar button u{text-decoration:underline;}
+  .note-toolbar-sep{width:1px; height:20px; background:var(--border); margin:0 2px;}
+  .note-toolbar .hl-swatch{width:18px; height:18px; border-radius:50%; display:inline-block; border:1px solid rgba(0,0,0,.18);}
+  .note-toolbar .hl-swatch.hl-pink{background:#ffcdf0;}
+  .note-toolbar .hl-swatch.hl-yellow{background:#fff2a0;}
+  .note-toolbar .hl-swatch.hl-blue{background:#bfe3ff;}
+  .note-toolbar .hl-swatch.hl-green{background:#bdf0cf;}
+  .note-toolbar button[data-cmd="clearhl"]{font-size:16px; color:var(--text-dim); line-height:1;}
+  .note-editable{
+    min-height:66px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px;
+    padding:10px 12px; font-size:15px; color:var(--text); line-height:1.65; outline:none;
+  }
+  .note-editable:focus{border-color:var(--accent);}
+  .note-editable:empty:before{content:attr(data-placeholder); color:var(--text-dim); opacity:.5;}
+
+  .sent-card.recap .row1-line, .sent-card.recap .simplified-line{display:none;}
+
+  /* Paragraph tab: each sentence sits on the left (75% of the row), its own Note panel on the right
+     (25%). The Note only grows taller by dragging (never wider) -- its width always stays exactly
+     its share of the row, so widening it can never squeeze the sentence column and shift where a
+     connection dot sits. */
+  .para-sent-row{display:flex; align-items:flex-start; gap:16px;}
+  .para-sent-main{flex:3 1 0%; min-width:0;}
+  .para-sent-note{flex:1 1 0%; min-width:160px;}
+  .para-sent-note .note-wrap{margin-top:0;}
+  .para-sent-note .note-editable{resize:vertical; overflow:auto; width:100%; min-width:0; min-height:60px; max-height:480px; font-size:13px; padding:8px 10px;}
+  /* The toolbar has less room here than in the Câu đơn tab, so its buttons run smaller, and a forced
+     break always puts B/I/U on one row and the highlight colors on the next -- not left to wrap
+     wherever the narrow column happens to squeeze it. */
+  .para-sent-note .note-toolbar{gap:4px;}
+  .para-sent-note .note-toolbar button{width:21px; height:20px; font-size:10px; border-radius:5px;}
+  .para-sent-note .note-toolbar .hl-swatch{width:13px; height:13px;}
+  .para-sent-note .note-toolbar button[data-cmd="clearhl"]{font-size:12px;}
+  .para-sent-note .note-toolbar-sep{margin:0 1px;}
+  .para-sent-note .note-toolbar-break{flex-basis:100%; height:0;}
+  @media (max-width:760px){
+    .para-sent-row{flex-direction:column;}
+    .para-sent-note{width:100%;}
+  }
+
+  .modal-overlay{position:fixed; inset:0; background:rgba(10,11,18,.5); display:flex; align-items:center; justify-content:center; z-index:40; padding:16px;}
+  .modal-box{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px; max-width:600px; width:100%; max-height:82vh; overflow:auto;}
+  .modal-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;}
+  .modal-head h3{font-size:17px;}
+  .modal-close{background:none; border:none; font-size:22px; color:var(--text-dim); cursor:pointer; line-height:1; padding:2px 6px;}
+  .modal-close:hover{color:var(--text);}
+  .compile-textarea{
+    width:100%; min-height:300px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px;
+    padding:12px; font-size:13px; font-family:"IBM Plex Mono", ui-monospace, monospace; color:var(--text);
+    white-space:pre-wrap; resize:vertical; line-height:1.6;
+  }
+  .modal-box textarea{width:100%; min-height:110px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; font-size:14px; color:var(--text); font-family:inherit; resize:vertical;}
+  .modal-box input[type=file]{font-size:13px; color:var(--text-dim);}
+  .bulk-preview{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
+  .bulk-thumb{width:56px; height:56px; object-fit:cover; border-radius:8px; border:1px solid var(--border);}
+
+  /* ---- Paragraph mode (Thêm đoạn văn) ---- */
+  .para-item{display:flex; justify-content:space-between; align-items:center; gap:12px; padding:14px 16px; border:1px solid var(--border); border-radius:12px; background:var(--surface); cursor:pointer;}
+  .para-item:hover{border-color:var(--accent);}
+  .para-item .prev{font-size:14px; line-height:1.5; max-width:480px; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;}
+  .para-item .count{font-size:12px; color:var(--accent); font-weight:700; white-space:nowrap;}
+  .para-item .del-btn{background:none; border:none; color:var(--text-dim); font-size:16px; cursor:pointer; padding:4px;}
+  .para-item .del-btn:hover{color:var(--bad);}
+  .para-back{font-size:13px; color:var(--text-dim); cursor:pointer; display:inline-flex; align-items:center; gap:4px; margin-bottom:12px;}
+  .para-back:hover{color:var(--accent);}
+  .para-sent-row{padding:16px 0; border-bottom:1px dashed var(--border); position:relative;}
+  .para-sent-row:last-of-type{border-bottom:none;}
+  .para-sent-row .sent-num, .qa-q-row .sent-num{position:static; display:inline-flex; margin-right:8px; flex:none;}
+  .para-sent-head{display:flex; align-items:flex-start; gap:2px;}
+
+  /* Main Idea box connection dots: small circles overlapping the box's top AND bottom edges, used to
+     drag-create a repeated-info connection to another sentence's Main Idea box. Hidden by default;
+     a dot appears when its .mi-box-stack is hovered, OR stays visible when it already carries a
+     connection (.linked), so an existing link stays legible without hovering. Scoped to paragraph
+     mode only — Câu đơn and the final-row boxes don't get these.
+     The dots are DOM SIBLINGS of the draggable box (a .mi-box-stack wrapping both), never descendants
+     of it — a button nested inside a draggable=true element is unreliable to click in real browsers,
+     since a human's natural few pixels of mouse movement between mousedown and mouseup can make the
+     browser start a native drag instead of firing a click.
+     .mi-box-stack gets extra padding-top/bottom (cancelled by an equal negative margin, so surrounding
+     spacing is unaffected) so its :hover region actually reaches both dots, which sit outside its
+     child box's own layout box. */
+  .mi-boxes.mi-boxes-connectable{padding:11px 0;}
+  .mi-box-stack{
+    position:relative; display:inline-flex;
+    padding-top:12px; padding-bottom:12px; margin-top:-12px; margin-bottom:-12px;
+  }
+  .mi-connect-handle{
+    position:absolute; left:50%;
+    width:13px; height:13px; border-radius:50%; box-sizing:border-box;
+    background:var(--surface); border:1.5px solid var(--accent);
+    cursor:pointer; z-index:4; transition:transform .12s, background .12s, opacity .12s; padding:0;
+    opacity:0; pointer-events:none;
+  }
+  /* Centered exactly on the child box's own top/bottom edge (12px into the stack's padding, where
+     that edge actually sits) so the dot straddles it -- half inside the box, half outside -- instead
+     of floating entirely above/below it. */
+  .mi-connect-handle.mi-connect-top{top:12px; transform:translate(-50%, -50%);}
+  .mi-connect-handle.mi-connect-bottom{bottom:12px; transform:translate(-50%, 50%);}
+  .mi-box-stack:hover .mi-connect-handle,
+  .mi-connect-handle.linked{
+    opacity:1; pointer-events:auto;
+  }
+  .mi-connect-handle.mi-connect-top:hover{transform:translate(-50%, -50%) scale(1.2);}
+  .mi-connect-handle.mi-connect-bottom:hover{transform:translate(-50%, 50%) scale(1.2);}
+  .mi-connect-handle.linked{background:var(--accent); box-shadow:0 0 0 3px var(--accent-soft);}
+  .mi-box-stack.mi-drop-target .mi-box{box-shadow:0 0 0 2px var(--accent) inset; background:var(--accent-soft, var(--surface));}
+
+  .para-connect-svg{position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1; overflow:visible;}
+  .para-conn-line{fill:none; stroke:var(--accent); stroke-width:2; stroke-dasharray:5 4; stroke-linecap:round;}
+  .para-conn-line.para-conn-live{opacity:.55; stroke-dasharray:4 4;}
+  /* Linear Model: one straight, centered, dashed line per idea-color column, running from the top of
+     the grid down through every pill in that column (intentionally drawn over the boxes/text) to its
+     matching box in "Main Idea (cả đoạn)", ending in an arrowhead that points into it. */
+  .lm-col-line{fill:none; stroke:var(--accent); stroke-width:1.5; stroke-dasharray:5 4; stroke-linecap:round; opacity:.8;}
+
+  .para-final-wrap{margin-top:10px; padding-top:10px; border-top:1px dashed var(--border); position:relative; z-index:2;}
+  /* Linear Model only: these boxes are repositioned AND re-sized by JS (redrawLinearModelConnections)
+     to center under their matching column and to hug their own text -- always a single line, never
+     wrapped, width set per-box in JS (falls back to the default width below before that JS runs). */
+  .lm-final-wrap .mi-box{width:84px; white-space:nowrap; overflow:hidden; text-align:center;}
+  .para-final-label{font-size:13px; font-weight:700; letter-spacing:0; text-transform:none; color:var(--accent); margin-bottom:8px;}
+  .para-final-label::before{content:""; display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent); margin-right:6px; vertical-align:middle;}
+  .final-mi-box{font-weight:700;}
+
+  /* Câu hỏi lẻ: "Bài đọc" reuses .para-sent-row/#para-connect-wrap untouched (full structure +
+     connections); "Câu hỏi" below it is structure-only, in its own .qa-q-row so it never collides with
+     the passage's token/connection selectors above. */
+  .qa-section-label{font-size:15px; font-weight:700; font-family:"Fraunces", Georgia, serif; color:var(--text); margin:22px 0 10px; padding-top:18px; border-top:1px solid var(--border);}
+  .qa-question-section{margin-top:6px;}
+  .qa-q-row{padding:14px 0; border-bottom:1px dashed var(--border);}
+  .qa-q-row:last-child{border-bottom:none;}
+  #view-paragraph .qa-q-row .row1-line{font-size:17px;}
+  #view-paragraph .qa-q-row .sim-chip{font-size:16px;}
+  /* Câu hỏi lẻ's single item-level Note: full width, straddling both sections above it, not a side
+     panel beside any one sentence -- and a bit larger than the old per-sentence Note for readability. */
+  .qa-note-section{margin-top:18px; padding-top:14px; border-top:1px dashed var(--border);}
+  .qa-note-editable{font-size:16px; min-height:80px; line-height:1.6;}
+
+  /* Câu hỏi lẻ's Linear Model: just the 2 rows worth comparing (see renderQaLinearModel). */
+  .qa-lm-wrap{display:flex; flex-direction:column; gap:18px;}
+  .qa-lm-row{padding:14px 0; border-bottom:1px dashed var(--border);}
+  .qa-lm-row:last-child{border-bottom:none;}
+  .qa-lm-label{font-size:12.5px; font-weight:700; letter-spacing:0; text-transform:none; color:var(--accent); margin-bottom:8px;}
+  .qa-lm-label::before{content:""; display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent); margin-right:6px; vertical-align:middle;}
+  .qa-lm-boxes{display:flex; flex-wrap:wrap; gap:8px;}
+
+  /* Linear Model: a compact grid, one row per simplified sentence, one column per group of linked
+     (repeated-info) Main Idea boxes — connected boxes share a column so they land in a straight line,
+     with the dashed connection lines (redrawLinearModelConnections) drawn on top to confirm the link. */
+  .lm-wrap{overflow-x:auto;}
+  .lm-grid{display:grid; row-gap:10px; column-gap:16px; align-items:center; padding:4px 2px;}
+  .lm-num{
+    width:26px; height:26px; border-radius:50%; background:var(--accent); color:#fff;
+    font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex:none;
+  }
+  /* Centered, not left-aligned: a column is as wide as its widest pill (minmax(70px, max-content)), so
+     a narrower pill in another row needs to sit in the middle of that space -- otherwise the straight
+     vertical column line (always drawn through the cell's true center) would run past its edge instead
+     of through it. */
+  .lm-cell{min-height:32px; display:flex; align-items:center; justify-content:center;}
+  .lm-pill{display:inline-block; padding:6px 12px; border-radius:8px; font-weight:700; font-size:15px; white-space:nowrap;}
+  .lm-pill.idea-yellow{background:var(--idea-yellow-bg); color:var(--idea-yellow-text);}
+  .lm-pill.idea-blue{background:var(--idea-blue-bg); color:var(--idea-blue-text);}
+  .lm-pill.idea-green{background:var(--idea-green-bg); color:var(--idea-green-text);}
+  .lm-pill.idea-red{background:var(--idea-red-bg); color:var(--idea-red-text);}
+
+  .mi-box-wrap.dragging{opacity:.4;}
+  .mi-box-wrap.drag-over{box-shadow:0 0 0 2px var(--accent); border-radius:8px;}
+  .mi-box-wrap[draggable]{cursor:grab;}
+
+  /* compact spacing inside paragraph mode so more sentences fit on screen at once */
+  #view-paragraph .para-sent-row{padding:4px 0;}
+  #view-paragraph .simplified-line{margin-top:4px;}
+  #view-paragraph .mi-row-wrap{margin-top:4px;}
+  #view-paragraph .mi-label{margin-bottom:4px;}
+  #view-paragraph .row1-line{font-size:15px;}
+  #view-paragraph .sim-chip{font-size:14px;}
+
+  @media (max-width:520px){
+    header.top{flex-wrap:wrap;}
+    .rel-choices{flex-direction:column;}
+  }
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+
+<header class="top">
+  <div class="brand">
+    <h1>Linear Thinking</h1>
+    <span class="tag">đọc cấu trúc · đọc connections</span>
+  </div>
+  <nav class="tabs">
+    <button id="tab-single" class="active">Câu đơn</button>
+    <button id="tab-paragraph">Thêm đoạn văn</button>
+    <button id="tab-qa">Câu hỏi lẻ</button>
+  </nav>
+</header>
+
+<div class="wrap">
+  <div id="view-single"></div>
+  <div id="view-paragraph" hidden></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- state ----------
+  const state = {
+    db: null, user: null, sample: null,
+    canEdit: false,
+    sentences: [],         // single-sentence annotation cards (Câu đơn tab)
+    recap: false,          // global eye toggle: hide original, show only Main Idea
+    localIdSeq: 1,
+    showCompile: false,    // compile-notes modal open/closed
+    downloads: null,
+    showBulk: false,       // bulk add-sentences modal open/closed
+    bulkFiles: [],          // images staged for the bulk modal
+    mcp: null,
+    localWriteUntil: {},    // {docId: timestampMs} — a doc just written locally is protected from being
+                             // clobbered by a slightly-stale realtime snapshot arriving out of order
+                             // (see markLocalWrite / subscribeSentences / subscribeParagraphs)
+    paragraphs: [],         // [{id, text, sentences:[...], relationships:[...], connections:[...], finalMainIdea:[...], order}]
+    currentParagraphId: null, // which paragraph is open in detail view (null = list view)
+    paraRecap: false,       // hide original sentence text, show only the Main Idea boxes stacked
+    paraHideSimplified: false, // also hide the "Simplified" line, leaving only Main Idea boxes
+    paraLinearModel: false, // replace the per-sentence list with a compact column-aligned grid of
+                             // Main Idea boxes, linked (repeated-info) ones sharing a column
+    paraDraftText: "",      // the "paste a paragraph" textarea's current value, kept in state so it
+                             // survives a re-render (e.g. triggered by picking an OCR image) instead of
+                             // being wiped when renderParagraphList() rebuilds the DOM from scratch
+    paraBulkFiles: [],       // images staged to be OCR'd into the paragraph textarea
+
+    // "Câu hỏi lẻ" (standalone questions) tab -- reuses the SAME `paragraphs` collection/detail
+    // machinery as "Thêm đoạn văn" for its reading-passage half (isQa:true marks these docs, and
+    // they're filtered out of the normal paragraph list/kept out of each other's lists), plus a
+    // parallel `questionSentences` array on the doc for its question half (structure-only, no
+    // cross-sentence connections, no Main-Idea-box connect handles).
+    paraMode: "normal",      // "normal" (Thêm đoạn văn) | "qa" (Câu hỏi lẻ) -- which filtered view/list
+                             // the shared #view-paragraph container is currently showing
+    qaDraftPassageText: "",  // the Qa "bài đọc" textarea's current (unsaved) draft
+    qaDraftQuestionText: ""  // the Qa "câu hỏi" textarea's current (unsaved) draft
+  };
+
+  const $ = (sel, root) => (root||document).querySelector(sel);
+  const $$ = (sel, root) => Array.from((root||document).querySelectorAll(sel));
+  const singleEl = $("#view-single");
+  const paragraphEl = $("#view-paragraph");
+  const toastEl = $("#toast");
+
+  function toast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toastEl._t);
+    toastEl._t = setTimeout(()=>toastEl.classList.remove("show"), 2600);
+  }
+  function esc(s){
+    return String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+
+  function showTab(name){
+    $("#tab-single").classList.toggle("active", name==="single");
+    $("#tab-paragraph").classList.toggle("active", name==="paragraph");
+    $("#tab-qa").classList.toggle("active", name==="qa");
+    singleEl.hidden = name!=="single";
+    // "Thêm đoạn văn" and "Câu hỏi lẻ" share the same #view-paragraph container (see state.paraMode) --
+    // both are built on the exact same paragraph-detail machinery, just filtered to a different slice
+    // of state.paragraphs and, for Qa, with an extra question section appended.
+    paragraphEl.hidden = (name!=="paragraph" && name!=="qa");
+    state.paraMode = name==="qa" ? "qa" : "normal";
+  }
+  $("#tab-single").onclick = ()=>{ showTab("single"); renderSingleView(); };
+  $("#tab-paragraph").onclick = ()=>{ showTab("paragraph"); state.currentParagraphId = null; renderParagraphView(); };
+  $("#tab-qa").onclick = ()=>{ showTab("qa"); state.currentParagraphId = null; renderParagraphView(); };
+
+  // ---------- capabilities bootstrap ----------
+  async function boot(){
+    try{
+      state.db = (window.claude && await claude.use("db")) || null;
+    }catch(e){ state.db = null; }
+    try{
+      state.user = (window.claude && await claude.use("user")) || null;
+    }catch(e){ state.user = null; }
+    try{
+      state.sample = (window.claude && await claude.use("sample")) || null;
+    }catch(e){ state.sample = null; }
+    try{
+      state.downloads = (window.claude && await claude.use("downloads")) || null;
+    }catch(e){ state.downloads = null; }
+    try{
+      state.mcp = (window.claude && await claude.use("mcp")) || null;
+    }catch(e){ state.mcp = null; }
+
+    if(state.user){
+      try{ state.canEdit = await state.user.canEdit(); }catch(e){ state.canEdit = false; }
+    }
+
+    renderSingleView();
+
+    if(state.db){
+      subscribeSentences();
+      subscribeParagraphs();
+    }
+  }
+
+  // ---------- SINGLE-SENTENCE MODE ----------
+  function subscribeSentences(){
+    state.db.collection("sentences").orderBy("order","asc").limit(500).onSnapshot(
+      (snap)=>{
+        const now = Date.now();
+        state.sentences = snap.docs.map(d=>{
+          if((state.localWriteUntil[d.id]||0) > now){
+            const existing = state.sentences.find(x=>x.id===d.id);
+            if(existing) return existing;
+          }
+          return Object.assign({id:d.id}, d.data());
+        });
+        if(!singleEl.hidden && !userIsTypingInField()) renderSingleView();
+      },
+      (err)=>{ console.error(err); }
+    );
+  }
+
+  // Call right before/while writing a doc to state.db, so a realtime snapshot that happens to land
+  // shortly after (reflecting a slightly older write than what's already in memory — the snapshot
+  // listeners below are plain "replace everything" handlers with no per-write ordering guarantee)
+  // doesn't clobber a newer local, unsaved-yet edit — e.g. selecting a token in sentence 2 right after
+  // checking sentence 1 was getting silently reverted by the snapshot for sentence 1's own write.
+  function markLocalWrite(id){
+    state.localWriteUntil[id] = Date.now() + 2500;
+  }
+
+  function userIsTypingInField(){
+    const a = document.activeElement;
+    if(!a) return false;
+    if(!singleEl.contains(a) && !paragraphEl.contains(a)) return false;
+    return a.classList && (a.classList.contains("mi-box") || a.classList.contains("note-editable") || a.classList.contains("para-input") || a.tagName==="TEXTAREA");
+  }
+
+  function sanitizeNoteHtml(html){
+    const allowedTags = {B:1,I:1,U:1,STRONG:1,EM:1,SPAN:1,BR:1,DIV:1};
+    const src = document.createElement("div");
+    src.innerHTML = html || "";
+    function build(node, out){
+      Array.from(node.childNodes).forEach(child=>{
+        if(child.nodeType === Node.TEXT_NODE){
+          out.appendChild(document.createTextNode(child.textContent));
+        } else if(child.nodeType === Node.ELEMENT_NODE){
+          const tag = child.tagName;
+          if(allowedTags[tag]){
+            const el = document.createElement(tag);
+            const bg = child.style && child.style.backgroundColor;
+            if(bg && bg !== "transparent") el.style.backgroundColor = bg;
+            build(child, el);
+            out.appendChild(el);
+          } else {
+            build(child, out);
+          }
+        }
+      });
+    }
+    const result = document.createElement("div");
+    build(src, result);
+    return result.innerHTML;
+  }
+
+  function htmlToPlainText(html){
+    const d = document.createElement("div");
+    d.innerHTML = html || "";
+    return (d.textContent || "").trim();
+  }
+
+  function tokenize(text){ return (text||"").trim().split(/\s+/).filter(Boolean); }
+
+  // Groups selected token indices into runs (each run = one pill / one Simplified chip). Two selected
+  // indices are normally merged into the same run when they're adjacent, EXCEPT when there's a forced
+  // boundary between them in `splitAfter` (a Set of indices i meaning "force a break between token i and
+  // token i+1 even though both are selected") -- this is how Cmd/Ctrl+click lets the user keep two
+  // touching words as two separate pills instead of one merged one. Shared by both the inline câu gốc
+  // highlight and the Simplified chip line so a manual split shows up identically in both places.
+  function buildSelRuns(sel, splitAfter){
+    const idxs = Array.from(sel).sort((a,b)=>a-b);
+    const runs = [];
+    for(const i of idxs){
+      const last = runs[runs.length-1];
+      const prev = last ? last[last.length-1] : null;
+      if(last && i === prev+1 && !splitAfter.has(prev)) last.push(i); else runs.push([i]);
+    }
+    return runs;
+  }
+
+  // Renders a sentence's tokens, wrapping each run (see buildSelRuns) in one ".sel-run" pill span so the
+  // highlight is a single rounded, text-hugging capsule around the whole phrase (one word selected -> a
+  // tight pill around just that word; two adjacent words selected -> one bigger pill wrapping both,
+  // unless split apart) instead of a row of separate blocky rectangles. `attrFor(i)` returns the
+  // per-token data-* attribute string (differs between the Câu đơn tab and the paragraph tab).
+  function buildTokHtml(tokens, sel, checked, attrFor, splitAfter, sel2){
+    splitAfter = splitAfter || new Set();
+    sel2 = sel2 || new Set();
+    const runs = buildSelRuns(sel, splitAfter);
+    const runStarts = new Map(runs.map(r=>[r[0], r]));
+    const runs2 = buildSelRuns(sel2, new Set());
+    const run2Starts = new Map(runs2.map(r=>[r[0], r]));
+    const parts = [];
+    let i = 0;
+    while(i < tokens.length){
+      if(runStarts.has(i)){
+        const run = runStarts.get(i);
+        const runParts = run.map(idx=>{
+          let cls = "tok sel";
+          if(checked) cls += " locked";
+          return `<span class="${cls}" ${attrFor(idx)}>${esc(tokens[idx])}</span>`;
+        });
+        parts.push(`<span class="sel-run">${runParts.join(" ")}</span>`);
+        i = run[run.length-1] + 1;
+      } else if(run2Starts.has(i)){
+        const run = run2Starts.get(i);
+        const runParts = run.map(idx=>{
+          let cls = "tok sel2";
+          if(checked) cls += " locked";
+          return `<span class="${cls}" ${attrFor(idx)}>${esc(tokens[idx])}</span>`;
+        });
+        parts.push(`<span class="sel2-run"><span class="sel2-bracket">[</span>${runParts.join(" ")}<span class="sel2-bracket">]</span></span>`);
+        i = run[run.length-1] + 1;
+      } else {
+        let cls = "tok";
+        if(checked) cls += " blurred locked";
+        parts.push(`<span class="${cls}" ${attrFor(i)}>${esc(tokens[i])}</span>`);
+        i++;
+      }
+    }
+    return parts.join(" ");
+  }
+
+  // Strips periods/commas from a Simplified chip's text per Thầy's request -- the chip should read as
+  // bare words, not a punctuated fragment.
+  function stripChipPunct(text){
+    return String(text||"").replace(/[.,]/g, "").replace(/\s+/g, " ").trim();
+  }
+
+  // Small circular "undo/redo"-style icon (⟲) appended at the end of the original-sentence line once
+  // it's Simplified/locked -- replaces the old "Chỉnh lại phần bôi chọn" text link, which ate up a
+  // whole extra line under every sentence. Same action on click; the tooltip (native `title`) carries
+  // the label instead.
+  function editUndoBtnHtml(attrs){
+    return `<button type="button" class="edit-undo-btn" ${attrs} title="Chỉnh lại phần bôi chọn">&#8634;</button>`;
+  }
+
+  // A .sel-run pill's own border/padding area is not covered by any .tok element's click handler
+  // (each .tok inside keeps a snug, near-zero padding so the pill hugs the text tightly) -- so a click
+  // that lands on that pill chrome instead of squarely on a word's glyphs would otherwise do nothing,
+  // which is exactly what made already-highlighted words feel unclickable. This finds whichever child
+  // .tok sits horizontally closest to the click, so clicking anywhere inside the pill always resolves
+  // to one specific word.
+  function nearestTokInRun(run, clientX){
+    const toks = Array.from(run.querySelectorAll(".tok"));
+    let best = null, bestDist = Infinity;
+    toks.forEach(t=>{
+      const r = t.getBoundingClientRect();
+      const cx = r.left + r.width/2;
+      const d = Math.abs(cx - clientX);
+      if(d < bestDist){ bestDist = d; best = t; }
+    });
+    return best;
+  }
+
+  function ensureMeasureSpan(){
+    let span = document.getElementById("mi-measure-span");
+    if(!span){
+      span = document.createElement("span");
+      span.id = "mi-measure-span";
+      span.style.position = "fixed";
+      span.style.left = "-9999px";
+      span.style.top = "-9999px";
+      span.style.whiteSpace = "pre";
+      span.style.visibility = "hidden";
+      document.body.appendChild(span);
+    }
+    return span;
+  }
+  function autosizeMiBox(el){
+    const span = ensureMeasureSpan();
+    const cs = getComputedStyle(el);
+    span.style.fontFamily = cs.fontFamily;
+    span.style.fontSize = cs.fontSize;
+    span.style.fontWeight = cs.fontWeight;
+    span.textContent = el.value || el.getAttribute("placeholder") || "";
+    const w = Math.ceil(span.getBoundingClientRect().width) + 28;
+    el.style.width = Math.max(100, Math.min(w, 640)) + "px";
+  }
+
+  function cssEsc(s){
+    return (window.CSS && CSS.escape) ? CSS.escape(s) : String(s).replace(/[^a-zA-Z0-9_-]/g, "\\$&");
+  }
+  function cssAttrEsc(s){
+    return String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  }
+  function elSelector(active){
+    if(active.classList.contains("mi-box") && active.dataset.ctx){
+      return `.mi-box[data-ctx="${cssAttrEsc(active.dataset.ctx)}"]`;
+    }
+    return null;
+  }
+  function captureFocus(){
+    const active = document.activeElement;
+    if(!active) return null;
+    const root = singleEl.contains(active) ? singleEl : (paragraphEl.contains(active) ? paragraphEl : null);
+    if(!root) return null;
+    if(active.tagName!=="INPUT" && active.tagName!=="TEXTAREA") return null;
+    const selector = elSelector(active);
+    if(!selector) return null;
+    return { root, selector, start: active.selectionStart, end: active.selectionEnd };
+  }
+  function restoreFocus(saved){
+    if(!saved) return;
+    const el = saved.root.querySelector(saved.selector);
+    if(!el) return;
+    el.focus();
+    try{ el.setSelectionRange(saved.start, saved.end); }catch(e){}
+  }
+
+  function eyeIcon(open){
+    return open
+      ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>'
+      : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M10.6 10.6a3 3 0 1 0 4.2 4.2M9.9 4.24A11 11 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-3.2 4.4M6.3 6.3C3.5 8.1 1 12 1 12a18.6 18.6 0 0 0 5 5.6"/></svg>';
+  }
+
+  // ---------- shared Main Idea box row (used by Câu đơn, paragraph sentences, paragraph final) ----------
+  // Boxes are stored as {id, text, color}. color (and id, used for paragraph repeated-info connections)
+  // are assigned once, at creation, and travel WITH the box when boxes are reordered or a sibling box
+  // is deleted — never recomputed from array position. Legacy data (plain strings, or objects without
+  // an id, from before this change) is migrated transparently on read.
+  const IDEA_PALETTE = ["idea-yellow","idea-blue","idea-green","idea-red"];
+  function genMiBoxId(){
+    return "b" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+  function normMiBoxes(arr){
+    const list = (arr && arr.length) ? arr : ["",""];
+    return list.map((b,i)=>{
+      if(b && typeof b === "object") return { id: b.id || genMiBoxId(), text: b.text||"", color: b.color || IDEA_PALETTE[i % IDEA_PALETTE.length] };
+      return { id: genMiBoxId(), text: b||"", color: IDEA_PALETTE[i % IDEA_PALETTE.length] };
+    });
+  }
+  function getBoxesArr(ctx){
+    if(ctx.kind==="single"){
+      const s = state.sentences.find(x=>x.id===ctx.id);
+      return normMiBoxes(s && s.mainIdeaBoxes);
+    }
+    if(ctx.kind==="para"){
+      const p = getParagraph(ctx.pid);
+      const s = p && p.sentences[ctx.sidx];
+      return normMiBoxes(s && s.mainIdeaBoxes);
+    }
+    if(ctx.kind==="final"){
+      const p = getParagraph(ctx.pid);
+      return normMiBoxes(p && p.finalMainIdea);
+    }
+    if(ctx.kind==="qaQuestion"){
+      const p = getParagraph(ctx.pid);
+      const s = p && (p.questionSentences||[])[ctx.sidx];
+      return normMiBoxes(s && s.mainIdeaBoxes);
+    }
+    return normMiBoxes([]);
+  }
+  function setBoxesArr(ctx, arr){
+    if(ctx.kind==="single") updateSentence(ctx.id, { mainIdeaBoxes: arr });
+    else if(ctx.kind==="para") updateParaSentence(ctx.pid, ctx.sidx, { mainIdeaBoxes: arr });
+    else if(ctx.kind==="final") updateParagraph(ctx.pid, { finalMainIdea: arr });
+    else if(ctx.kind==="qaQuestion") updateQaQuestionSentence(ctx.pid, ctx.sidx, { mainIdeaBoxes: arr });
+  }
+  function renderMiBoxRow(ctx, boxesRaw, opts){
+    opts = opts || {};
+    const boxes = normMiBoxes(boxesRaw);
+    const rowCtxStr = esc(JSON.stringify(ctx));
+    const boxesHtml = boxes.map((b,i)=>{
+      const itemCtxStr = esc(JSON.stringify(Object.assign({}, ctx, {idx:i})));
+      const removeBtn = (boxes.length>1 && !opts.noRemove)
+        ? `<button class="mi-remove" data-ctx="${itemCtxStr}" data-action="mi-row-remove" title="Xóa ô">&times;</button>`
+        : "";
+      if(!opts.connectable){
+        return `<div class="mi-box-wrap" draggable="true" data-ctx="${itemCtxStr}" data-box-id="${esc(b.id)}">
+          <input type="text" class="mi-box ${b.color}" data-ctx="${itemCtxStr}" placeholder="........." value="${esc(b.text||'')}">
+          ${removeBtn}
+        </div>`;
+      }
+      // Connectable (paragraph) boxes: the connect dots are siblings of the draggable box, NOT its
+      // descendants. A button nested inside a draggable=true ancestor is unreliable to click in real
+      // browsers — a human's natural few-pixels of mouse movement between mousedown and mouseup can
+      // make the browser start a native drag instead of firing a click, even with draggable="false"
+      // on the button itself. Keeping the dots as outside siblings avoids that entirely.
+      // Each dot is hidden until hovered, UNLESS it's actually part of an existing connection —
+      // opts.topLinked/bottomLinked are Sets of box ids already connected via that edge.
+      const isTopLinked = opts.topLinked && opts.topLinked.has(b.id);
+      const isBottomLinked = opts.bottomLinked && opts.bottomLinked.has(b.id);
+      const topHandle = `<button type="button" class="mi-connect-handle mi-connect-top ${isTopLinked?'linked':''}" data-ctx="${itemCtxStr}" title="Kéo để nối repeated info"></button>`;
+      const bottomHandle = `<button type="button" class="mi-connect-handle mi-connect-bottom ${isBottomLinked?'linked':''}" data-ctx="${itemCtxStr}" title="Kéo để nối repeated info"></button>`;
+      return `<div class="mi-box-stack" data-box-id="${esc(b.id)}">
+        ${topHandle}
+        <div class="mi-box-wrap mi-connectable" draggable="true" data-ctx="${itemCtxStr}">
+          <input type="text" class="mi-box ${b.color}" data-ctx="${itemCtxStr}" placeholder="........." value="${esc(b.text||'')}">
+          ${removeBtn}
+        </div>
+        ${bottomHandle}
+      </div>`;
+    }).join("");
+    const addBtn = opts.noAdd ? "" : `<button class="mi-add" data-ctx="${rowCtxStr}" data-action="mi-row-add" title="Thêm ô">+</button>`;
+    return `<div class="mi-boxes${opts.connectable?' mi-boxes-connectable':''}">${boxesHtml}${addBtn}</div>`;
+  }
+  function wireMiBoxRows(root){
+    $$(".mi-box[data-ctx]", root).forEach(el=>{
+      autosizeMiBox(el);
+      const flush = ()=>{
+        clearTimeout(el._t);
+        const ctx = JSON.parse(el.dataset.ctx);
+        const arr = getBoxesArr(ctx).slice();
+        if(arr[ctx.idx]) arr[ctx.idx] = Object.assign({}, arr[ctx.idx], { text: el.value });
+        setBoxesArr(ctx, arr);
+      };
+      el.oninput = ()=>{ autosizeMiBox(el); clearTimeout(el._t); el._t = setTimeout(flush, 500); };
+      el.onkeydown = (e)=>{
+        if(e.key==="Escape"){ e.target.blur(); return; }
+        // Tab should hop straight to the next (or, with Shift, the previous) Main Idea box, skipping
+        // over the remove/connect-handle buttons that sit between boxes in the DOM -- those would
+        // otherwise eat the first Tab press and make it look like Tab "does nothing".
+        if(e.key==="Tab"){
+          const boxes = $$(".mi-box[data-ctx]", root);
+          const idx = boxes.indexOf(el);
+          if(idx===-1) return;
+          const target = boxes[idx + (e.shiftKey ? -1 : 1)];
+          if(target){
+            e.preventDefault();
+            target.focus();
+            target.select();
+          }
+        }
+      };
+      el.onblur = ()=>{ clearTimeout(el._t); setTimeout(flush, 0); };
+    });
+    $$("[data-action='mi-row-add']", root).forEach(el=>{
+      el.onclick = ()=>{
+        const ctx = JSON.parse(el.dataset.ctx);
+        const arr = getBoxesArr(ctx).slice();
+        arr.push({ text: "", color: IDEA_PALETTE[arr.length % IDEA_PALETTE.length] });
+        setBoxesArr(ctx, arr);
+      };
+    });
+    $$("[data-action='mi-row-remove']", root).forEach(el=>{
+      el.onclick = ()=>{
+        const ctx = JSON.parse(el.dataset.ctx);
+        const arr = getBoxesArr(ctx).slice();
+        arr.splice(ctx.idx, 1);
+        if(arr.length===0) arr.push({ text:"", color: IDEA_PALETTE[0] });
+        setBoxesArr(ctx, arr);
+      };
+    });
+    let dragCtx = null;
+    $$(".mi-box-wrap[draggable]", root).forEach(wrap=>{
+      wrap.addEventListener("dragstart", ()=>{ dragCtx = JSON.parse(wrap.dataset.ctx); wrap.classList.add("dragging"); });
+      wrap.addEventListener("dragend", ()=>{
+        dragCtx = null;
+        $$(".mi-box-wrap", root).forEach(w=>{ w.classList.remove("dragging"); w.classList.remove("drag-over"); });
+      });
+      wrap.addEventListener("dragover", (e)=>{ e.preventDefault(); wrap.classList.add("drag-over"); });
+      wrap.addEventListener("dragleave", ()=>{ wrap.classList.remove("drag-over"); });
+      wrap.addEventListener("drop", (e)=>{
+        e.preventDefault();
+        wrap.classList.remove("drag-over");
+        if(!dragCtx) return;
+        const target = JSON.parse(wrap.dataset.ctx);
+        if(dragCtx.kind!==target.kind) return;
+        if(dragCtx.kind==="single" && dragCtx.id!==target.id) return;
+        if(dragCtx.kind==="para" && (dragCtx.pid!==target.pid || dragCtx.sidx!==target.sidx)) return;
+        if(dragCtx.kind==="final" && dragCtx.pid!==target.pid) return;
+        if(dragCtx.idx===target.idx) return;
+        const arr = getBoxesArr(target).slice();
+        const tmp = arr[dragCtx.idx]; arr[dragCtx.idx] = arr[target.idx]; arr[target.idx] = tmp;
+        setBoxesArr(target, arr);
+        dragCtx = null;
+      });
+    });
+  }
+
+  function addSentence(text, orderOverride){
+    text = (text||"").trim();
+    if(!text) return;
+    const order = (typeof orderOverride === "number") ? orderOverride : Date.now();
+    if(state.db){
+      state.db.collection("sentences").add({
+        text, selected:[], checked:false, mainIdeaBoxes:["",""], noteHtml:"",
+        order, createdAt: Date.now()
+      }).catch(err=>{ console.error(err); toast("Không lưu được câu này."); });
+    } else {
+      state.sentences.push({
+        id:"local_"+(state.localIdSeq++), text, selected:[], checked:false,
+        mainIdeaBoxes:["",""], noteHtml:"", order
+      });
+      renderSingleView();
+    }
+  }
+
+  function splitSentencesLocal(text){
+    let t = (text||"").replace(/\r\n/g, "\n");
+    t = t.replace(/(\w)-\n(\w)/g, "$1$2");      // join hyphenated line-wraps
+    t = t.replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
+    if(!t) return [];
+    const parts = t.match(/[^.!?]+[.!?]+(?:["')\]]+)?/g);
+    const list = parts && parts.length ? parts : [t];
+    return list.map(s=>s.trim()).filter(Boolean);
+  }
+
+  async function handleBulkSubmit(){
+    const textArea = $("#bulk-text");
+    const text = textArea ? textArea.value.trim() : "";
+    const files = state.bulkFiles.slice();
+    const statusEl = $("#bulk-status");
+    if(!text && files.length===0){ toast("Bạn chưa dán văn bản hoặc chọn ảnh."); return; }
+
+    const submitBtn = $("#bulk-submit");
+    if(submitBtn) submitBtn.disabled = true;
+    if(statusEl){ statusEl.hidden=false; statusEl.innerHTML = `<span class="spinner"></span> Đang tách câu...`; }
+
+    try{
+      let sentencesArr;
+      if(files.length>0){
+        if(!state.sample){ const e=new Error("no sample"); e.code="not_granted"; throw e; }
+        const prompt = `Bạn sẽ nhận nội dung bên dưới (có thể gồm văn bản và/hoặc hình ảnh chứa chữ tiếng Anh, chụp từ sách/tài liệu). Nhiệm vụ: đọc toàn bộ nội dung, kể cả chữ trong ảnh, rồi tách thành từng CÂU tiếng Anh hoàn chỉnh riêng biệt, theo đúng thứ tự xuất hiện (nếu có nhiều ảnh, đọc lần lượt theo đúng thứ tự ảnh được đưa vào). Giữ nguyên câu gốc, không diễn giải lại, không thêm bớt nội dung. Bỏ qua tiêu đề, số trang, chú thích rời rạc không phải câu hoàn chỉnh.
+
+${text ? "VĂN BẢN ĐÍNH KÈM:\n"+text+"\n\n" : ""}CHỈ trả về JSON là một mảng các chuỗi câu, không kèm chữ nào khác. Ví dụ: ["Sentence one.","Sentence two."]`;
+        sentencesArr = await state.sample.json(prompt, { images: files, modelTier:"default", cache:false });
+      } else {
+        sentencesArr = splitSentencesLocal(text);
+      }
+      if(!Array.isArray(sentencesArr) || sentencesArr.length===0){ const e=new Error("empty"); e.code="empty"; throw e; }
+
+      const base = Date.now();
+      let count = 0;
+      sentencesArr.forEach((s,i)=>{
+        const clean = String(s||"").trim();
+        if(clean){ addSentence(clean, base+i); count++; }
+      });
+
+      toast(`Đã thêm ${count} câu.`);
+      state.showBulk = false;
+      state.bulkFiles = [];
+      renderSingleView();
+    }catch(e){
+      console.error(e);
+      let msg = "Không tách được câu, thử lại.";
+      if(e && e.code==="not_granted") msg = "Cần quyền dùng Claude ở đây để đọc ảnh.";
+      if(e && e.code==="rate_limited") msg = "Đang bị giới hạn tốc độ, thử lại sau một chút.";
+      if(e && e.code==="invalid_json") msg = "Không đọc được định dạng trả về, thử lại.";
+      if(e && e.code==="images_unavailable") msg = "Không gửi ảnh được ở đây.";
+      if(e && e.code==="empty") msg = "Không tìm thấy câu nào, thử lại.";
+      if(statusEl){ statusEl.innerHTML = `<span style="color:var(--bad);">${esc(msg)}</span>`; }
+      toast(msg);
+    }finally{
+      if(submitBtn) submitBtn.disabled = false;
+    }
+  }
+
+  async function handleParaOcr(){
+    const files = state.paraBulkFiles.slice();
+    if(files.length===0){ toast("Bạn chưa chọn ảnh."); return; }
+    if(!state.sample){ toast("Cần quyền dùng Claude ở đây để đọc ảnh."); return; }
+
+    const statusEl = $("#para-ocr-status", paragraphEl);
+    const btn = $("#para-ocr-btn", paragraphEl);
+    if(btn) btn.disabled = true;
+    if(statusEl){ statusEl.hidden=false; statusEl.innerHTML = `<span class="spinner"></span> Đang đọc ảnh...`; }
+
+    try{
+      const prompt = `Bạn sẽ nhận một hoặc nhiều ảnh chụp MỘT đoạn văn tiếng Anh liên tục (academic paragraph), theo đúng thứ tự ảnh được đưa vào (nếu nhiều ảnh là các phần nối tiếp của cùng một đoạn, ví dụ chụp 2 nửa trang). Nhiệm vụ: đọc chính xác toàn bộ chữ tiếng Anh trong ảnh rồi trả về lại ĐÚNG đoạn văn đó dưới dạng văn bản thuần (plain text), nối liền mạch lạc. Giữ nguyên câu chữ gốc, không diễn giải lại, không tóm tắt, không thêm bớt nội dung, không thêm tiêu đề hay chú thích gì khác. Chỉ trả về đúng nội dung đoạn văn, không kèm chữ nào khác.`;
+      const result = await state.sample(prompt, { images: files, modelTier:"default", cache:false });
+      const text = (result && result.text || "").trim();
+      if(!text){ const e=new Error("empty"); e.code="empty"; throw e; }
+
+      state.paraDraftText = text;
+      state.paraBulkFiles = [];
+      toast("Đã đọc xong — kiểm tra lại rồi bấm \"Tách câu & bắt đầu\".");
+      renderParagraphView();
+    }catch(e){
+      console.error(e);
+      let msg = "Không đọc được ảnh, thử lại.";
+      if(e && e.code==="not_granted") msg = "Cần quyền dùng Claude ở đây để đọc ảnh.";
+      if(e && e.code==="rate_limited") msg = "Đang bị giới hạn tốc độ, thử lại sau một chút.";
+      if(e && e.code==="images_unavailable") msg = "Không gửi ảnh được ở đây.";
+      if(e && e.code==="empty") msg = "Không đọc được chữ nào trong ảnh.";
+      const statusEl2 = $("#para-ocr-status", paragraphEl);
+      if(statusEl2){ statusEl2.hidden=false; statusEl2.innerHTML = `<span style="color:var(--bad);">${esc(msg)}</span>`; }
+      toast(msg);
+    }finally{
+      const btn2 = $("#para-ocr-btn", paragraphEl);
+      if(btn2) btn2.disabled = false;
+    }
+  }
+
+  function parsePresentationId(urlOrId){
+    const s = (urlOrId||"").trim();
+    const m = s.match(/\/presentation\/d\/([a-zA-Z0-9_-]+)/);
+    if(m) return m[1];
+    if(/^[a-zA-Z0-9_-]{15,}$/.test(s)) return s;
+    return null;
+  }
+
+  function extractShapeTexts(pageElements){
+    // Returns an array of per-shape (per text box) text blocks, in element order.
+    // Kept per-shape (not joined into one blob) because many Slides text boxes used for
+    // practice sentences have no terminal punctuation; splitSentencesLocal needs to see
+    // each shape on its own so it can fall back to "whole shape = one sentence" per shape
+    // instead of losing sentence boundaries across the whole deck.
+    const out = [];
+    const elements = pageElements || [];
+    for(const el of elements){
+      const textElements = el.shape && el.shape.text && el.shape.text.textElements;
+      if(!textElements) continue;
+      let shapeText = "";
+      for(const te of textElements){
+        if(te.textRun && typeof te.textRun.content === "string") shapeText += te.textRun.content;
+      }
+      shapeText = shapeText.trim();
+      if(shapeText) out.push(shapeText);
+    }
+    return out;
+  }
+
+  // The Google Slides connector's payload, as actually delivered to this page, comes
+  // back wrapped one level deeper than the raw API resource — {content: {slides:[...]}}
+  // for a presentation, {content: {pageElements:[...]}} for a single page — instead of
+  // {slides:[...]} / {pageElements:[...]} directly. Unwrap defensively either way.
+  function unwrapSlidesPayload(payload){
+    if(!payload) return payload;
+    if(payload.content && typeof payload.content === "object") return payload.content;
+    return payload;
+  }
+
+  function extractTextFromPresentation(payload){
+    const out = [];
+    const body = unwrapSlidesPayload(payload);
+    const slides = (body && body.slides) || [];
+    for(const slide of slides){
+      extractShapeTexts(slide.pageElements).forEach(t=>out.push(t));
+    }
+    return out;
+  }
+
+  async function handleSlidesFetch(){
+    const input = $("#bulk-slides-url");
+    const statusEl = $("#bulk-status");
+    const presentationId = parsePresentationId(input ? input.value : "");
+    if(!presentationId){ toast("Link Google Slides không hợp lệ."); return; }
+    if(!state.mcp){ toast("Chưa kết nối được Google Slides ở đây."); return; }
+
+    const fetchBtn = $("#bulk-slides-fetch");
+    if(fetchBtn) fetchBtn.disabled = true;
+    if(statusEl){ statusEl.hidden=false; statusEl.innerHTML = `<span class="spinner"></span> Đang mở presentation...`; }
+
+    try{
+      // Step 1: light call — just the slide IDs, so we can read each slide separately.
+      // (Reading the whole deck's text in one call can fail/empty-out on large decks;
+      // reading slide-by-slide keeps every call small and works for any deck size.)
+      const listResult = await state.mcp.callTool("Google Slides", "read_presentation", {
+        presentationId,
+        fields: ["slides.objectId"]
+      });
+      console.log("[Slides debug] listResult:", listResult);
+      const listBody = unwrapSlidesPayload(listResult.payload);
+      const slideIds = ((listBody && listBody.slides) || [])
+        .map(s=> s && s.objectId).filter(Boolean);
+      if(slideIds.length===0){
+        const e=new Error("empty"); e.code="empty";
+        e.debug = "Bước 1 (lấy danh sách slide) — payload nhận được: " + JSON.stringify(listResult && listResult.payload).slice(0,800);
+        throw e;
+      }
+
+      // Step 2: read each slide's shapes individually.
+      const shapeTexts = [];
+      let firstPagePayload = null;
+      for(let i=0;i<slideIds.length;i++){
+        if(statusEl){ statusEl.innerHTML = `<span class="spinner"></span> Đang đọc slide ${i+1}/${slideIds.length}...`; }
+        const pageResult = await state.mcp.callTool("Google Slides", "read_slide_page", {
+          presentationId,
+          pageId: slideIds[i],
+          fields: ["pageElements.shape.text.textElements.textRun.content"]
+        });
+        if(i===0){ firstPagePayload = pageResult.payload; console.log("[Slides debug] first pageResult:", pageResult); }
+        const pageBody = unwrapSlidesPayload(pageResult.payload);
+        const pageElements = (pageBody && pageBody.pageElements) || [];
+        extractShapeTexts(pageElements).forEach(t=> shapeTexts.push(t));
+      }
+
+      const sentencesArr = [];
+      shapeTexts.forEach(shapeText=>{
+        splitSentencesLocal(shapeText).forEach(s=> sentencesArr.push(s));
+      });
+      if(sentencesArr.length===0){
+        const e=new Error("empty"); e.code="empty";
+        e.debug = `Bước 2 (đọc ${slideIds.length} slide) — payload slide đầu tiên: ` + JSON.stringify(firstPagePayload).slice(0,800);
+        throw e;
+      }
+
+      const base = Date.now();
+      let count = 0;
+      sentencesArr.forEach((s,i)=>{
+        const clean = String(s||"").trim();
+        if(clean){ addSentence(clean, base+i); count++; }
+      });
+
+      toast(`Đã thêm ${count} câu từ Slides.`);
+      state.showBulk = false;
+      state.bulkFiles = [];
+      renderSingleView();
+    }catch(e){
+      console.error(e);
+      let msg = "Không đọc được Slides, thử lại.";
+      if(e && e.code==="needs_reauth") msg = "Cần kết nối lại Google Slides trong Cài đặt → Connectors.";
+      if(e && e.code==="server_not_connected") msg = "Chưa kết nối Google Slides — vào Cài đặt → Connectors để thêm.";
+      if(e && e.code==="selection_required") msg = "Bạn có nhiều tài khoản Google Slides, hãy chọn một trong claude.ai.";
+      if(e && e.code==="not_in_manifest" || e && e.code==="blocked_by_policy") msg = "Không có quyền đọc Google Slides ở đây.";
+      if(e && e.code==="approval_required") msg = "Cần bạn đồng ý cho phép đọc Google Slides.";
+      if(e && e.code==="tool_error") msg = "Không mở được — file này có thể là .pptx (PowerPoint) mở trong Slides, không phải Google Slides gốc. Vào file đó → File → Save as Google Slides, rồi dán link của bản copy mới.";
+      if(e && e.code==="empty") msg = "Không tìm thấy câu nào trong Slides này.";
+      // Always surface the raw error (code/message/stack) so a failure is diagnosable
+      // from a screenshot alone, without needing the browser console.
+      const rawBits = [];
+      if(e && e.code) rawBits.push("code="+e.code);
+      if(e && e.message) rawBits.push("message="+e.message);
+      if(e && e.debug) rawBits.push(e.debug);
+      if(!rawBits.length && e){ try{ rawBits.push(JSON.stringify(e).slice(0,800)); }catch(_){ rawBits.push(String(e)); } }
+      const debugHtml = rawBits.length ? `<div style="margin-top:6px; font-size:12px; color:var(--muted); word-break:break-all; user-select:text;">${esc(rawBits.join(" | "))}</div>` : "";
+      if(statusEl){
+        statusEl.innerHTML = `<span style="color:var(--bad);">${esc(msg)}</span>${debugHtml}`;
+      }
+      toast(msg);
+    }finally{
+      if(fetchBtn) fetchBtn.disabled = false;
+    }
+  }
+
+  function renderBulkModal(){
+    if(!state.showBulk) return "";
+    const previewHtml = state.bulkFiles.map(f=>`<img class="bulk-thumb" src="${URL.createObjectURL(f)}" alt="${esc(f.name)}">`).join("");
+    return `<div class="modal-overlay" id="bulk-overlay">
+      <div class="modal-box">
+        <div class="modal-head"><h3>Thêm nhiều câu</h3><button class="modal-close" id="bulk-close">&times;</button></div>
+        <label class="field">Dán một đoạn gồm nhiều câu (để trống nếu bạn chỉ dùng ảnh)
+          <textarea id="bulk-text" rows="6" placeholder="Dán đoạn văn bản tiếng Anh vào đây..."></textarea>
+        </label>
+        <label class="field" style="margin-top:12px;">Hoặc tải ảnh lên ${state.sample? '— mình sẽ đọc chữ trong ảnh' : '(cần quyền dùng Claude ở đây)'}
+          <input type="file" id="bulk-images" accept="image/png,image/jpeg,image/webp,image/gif" multiple ${state.sample? '' : 'disabled'}>
+        </label>
+        ${previewHtml ? `<div class="bulk-preview">${previewHtml}</div>` : ``}
+        <div class="row" style="margin-top:14px;">
+          <button class="primary" id="bulk-submit">Tách thành từng câu</button>
+          <button class="ghost" id="bulk-cancel">Hủy</button>
+        </div>
+        <div id="bulk-status" class="status-line" hidden></div>
+        <hr style="border:none; border-top:1px solid var(--border); margin:18px 0;">
+        <label class="field">Hoặc dán link Google Slides ${state.mcp? '— đọc trực tiếp, không tốn token' : '(cần kết nối Google Slides trong Cài đặt → Connectors)'}
+          <input type="text" id="bulk-slides-url" placeholder="https://docs.google.com/presentation/d/..." ${state.mcp? '' : 'disabled'}>
+        </label>
+        <div class="row" style="margin-top:8px;">
+          <button class="ghost" id="bulk-slides-fetch" ${state.mcp? '' : 'disabled'}>Lấy câu từ Slides</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function updateSentence(id, patch){
+    const s = state.sentences.find(x=>x.id===id);
+    if(s) Object.assign(s, patch);
+    if(!userIsTypingInField()) renderSingleView();
+    if(state.db){
+      markLocalWrite(id);
+      state.db.collection("sentences").doc(id).update(patch).catch(err=>{ console.error(err); });
+    }
+  }
+
+  function deleteSentence(id){
+    if(state.db){
+      state.db.collection("sentences").doc(id).delete().catch(err=>{ console.error(err); });
+    } else {
+      state.sentences = state.sentences.filter(x=>x.id!==id);
+      renderSingleView();
+    }
+  }
+
+  function toggleTok(id, idx){
+    const s = state.sentences.find(x=>x.id===id);
+    if(!s || s.checked) return;
+    const sel = new Set(s.selected||[]);
+    if(sel.has(idx)) sel.delete(idx); else sel.add(idx);
+    updateSentence(id, { selected: Array.from(sel).sort((a,b)=>a-b) });
+  }
+
+  function toggleTokSplit(id, idx){
+    const s = state.sentences.find(x=>x.id===id);
+    if(!s || s.checked) return;
+    const sel = new Set(s.selected||[]);
+    const splits = new Set(s.selSplitAfter||[]);
+    if(sel.has(idx) && sel.has(idx+1)){
+      if(splits.has(idx)) splits.delete(idx); else splits.add(idx);
+    } else if(sel.has(idx-1) && sel.has(idx)){
+      const b = idx-1;
+      if(splits.has(b)) splits.delete(b); else splits.add(b);
+    } else {
+      toggleTok(id, idx);
+      return;
+    }
+    updateSentence(id, { selSplitAfter: Array.from(splits).sort((a,b)=>a-b) });
+  }
+
+  // Option/Alt+click marks a word or phrase as a "secondary" (phụ) highlight -- a lighter, bracketed
+  // annotation independent of the main pink selection, excluded from the Simplified chip row below.
+  function toggleTokSecondary(id, idx){
+    const s = state.sentences.find(x=>x.id===id);
+    if(!s || s.checked) return;
+    const sel2 = new Set(s.selSecondary||[]);
+    if(sel2.has(idx)) sel2.delete(idx); else sel2.add(idx);
+    updateSentence(id, { selSecondary: Array.from(sel2).sort((a,b)=>a-b) });
+  }
+
+  function renderSentCardHtml(s, number){
+    const tokens = tokenize(s.text);
+    const sel = new Set(s.selected||[]);
+    const splitAfter = new Set(s.selSplitAfter||[]);
+    const sel2 = new Set(s.selSecondary||[]);
+    const tokHtml = buildTokHtml(tokens, sel, s.checked, i=>`data-id="${esc(s.id)}" data-idx="${i}"`, splitAfter, sel2);
+
+    const checkBtn = (!s.checked && sel.size>0)
+      ? `<button class="check-fab" data-id="${esc(s.id)}" data-action="check" title="Simplify">&#10003;</button>`
+      : "";
+
+    let simplifiedHtml = "", miHtml = "";
+    if(s.checked){
+      const runs = buildSelRuns(sel, splitAfter);
+      const chips = runs.map(run=>`<span class="sim-chip">${esc(stripChipPunct(run.map(i=>tokens[i]).join(" ")))}</span>`).join("");
+      simplifiedHtml = `<div class="simplified-line"><span class="simplified-label">Simplified</span>${chips || '<span class="muted">(chưa bôi phần nào)</span>'}</div>`;
+
+      const miRowHtml = renderMiBoxRow({kind:"single", id:s.id}, s.mainIdeaBoxes);
+
+      miHtml = `<div class="mi-row-wrap">
+        <div class="mi-label">Main idea</div>
+        ${miRowHtml}
+        <div class="note-wrap">
+          <div class="mi-label">Note</div>
+          <div class="note-toolbar" data-id="${esc(s.id)}">
+            <button type="button" data-cmd="bold" title="Đậm"><b>B</b></button>
+            <button type="button" data-cmd="italic" title="Nghiêng"><i>I</i></button>
+            <button type="button" data-cmd="underline" title="Gạch chân"><u>U</u></button>
+            <span class="note-toolbar-sep"></span>
+            <button type="button" data-cmd="highlight" data-hl="pink" title="Highlight hồng"><span class="hl-swatch hl-pink"></span></button>
+            <button type="button" data-cmd="highlight" data-hl="yellow" title="Highlight vàng"><span class="hl-swatch hl-yellow"></span></button>
+            <button type="button" data-cmd="highlight" data-hl="blue" title="Highlight xanh dương"><span class="hl-swatch hl-blue"></span></button>
+            <button type="button" data-cmd="highlight" data-hl="green" title="Highlight xanh lá"><span class="hl-swatch hl-green"></span></button>
+            <span class="note-toolbar-sep"></span>
+            <button type="button" data-cmd="clearhl" title="Bỏ highlight">&#8416;</button>
+          </div>
+          <div class="note-editable" contenteditable="true" data-id="${esc(s.id)}" data-placeholder="Ghi chú thêm cho câu này...">${sanitizeNoteHtml(s.noteHtml||'')}</div>
+        </div>
+      </div>`;
+    }
+
+    const editBtn = s.checked ? editUndoBtnHtml(`data-id="${esc(s.id)}" data-action="edit"`) : "";
+
+    return `<div class="sent-card ${state.recap?'recap':''}">
+      <div class="sent-num">${number}</div>
+      <button class="del-btn" data-id="${esc(s.id)}" data-action="delete" title="Xóa câu">&times;</button>
+      <div class="row1-line">${tokHtml}${checkBtn}${editBtn}</div>
+      ${simplifiedHtml}
+      ${miHtml}
+    </div>`;
+  }
+
+  function compileNotes(){
+    const lines = [];
+    const chronological = state.sentences.slice().sort((a,b)=>(a.order||0)-(b.order||0));
+    chronological.forEach((s,idx)=>{
+      const note = htmlToPlainText(s.noteHtml||"");
+      const boxes = normMiBoxes(s.mainIdeaBoxes).map(b=>(b.text||"").trim()).filter(Boolean);
+      if(!note && boxes.length===0) return;
+      lines.push(`${idx+1}. ${s.text}`);
+      if(boxes.length) lines.push(`   Main idea: ${boxes.join(" — ")}`);
+      if(note) lines.push(`   Note: ${note}`);
+      lines.push("");
+    });
+    return lines.join("\n").trim();
+  }
+
+  function renderCompileModal(){
+    if(!state.showCompile) return "";
+    const text = compileNotes();
+    return `<div class="modal-overlay" id="compile-overlay">
+      <div class="modal-box">
+        <div class="modal-head">
+          <h3>Tổng hợp Note</h3>
+          <button class="modal-close" id="compile-close">&times;</button>
+        </div>
+        ${text
+          ? `<textarea readonly id="compile-text" class="compile-textarea">${esc(text)}</textarea>`
+          : `<p class="muted">Chưa có Main idea hoặc Note nào được điền.</p>`}
+        <div class="row" style="margin-top:14px;">
+          ${text ? `<button class="primary" id="compile-copy">Copy toàn bộ</button>` : ``}
+          <button class="ghost" id="compile-close-btn">Đóng</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function buildExportHtml(){
+    const chronological = state.sentences.slice().sort((a,b)=>(a.order||0)-(b.order||0));
+    const cards = chronological.map((s,i)=>{
+      const tokens = tokenize(s.text);
+      const sel = new Set(s.selected||[]);
+      const tokHtml = (()=>{
+        const parts = [];
+        let idx = 0;
+        while(idx < tokens.length){
+          if(sel.has(idx)){
+            const runParts = [];
+            while(idx < tokens.length && sel.has(idx)){
+              runParts.push(`<span class="xtok xsel">${esc(tokens[idx])}</span>`);
+              idx++;
+            }
+            parts.push(`<span class="xsel-run">${runParts.join(" ")}</span>`);
+          } else {
+            const cls = s.checked ? "xtok xdim" : "xtok";
+            parts.push(`<span class="${cls}">${esc(tokens[idx])}</span>`);
+            idx++;
+          }
+        }
+        return parts.join(" ");
+      })();
+
+      const xIdeaColors = ["xyellow","xblue","xgreen","xred"];
+      const boxes = normMiBoxes(s.mainIdeaBoxes).map(b=>(b.text||"").trim()).filter(Boolean);
+      const boxesHtml = boxes.map((b,bi)=>`<span class="xidea ${xIdeaColors[bi % xIdeaColors.length]}">${esc(b)}</span>`).join("");
+      const noteHtml = sanitizeNoteHtml(s.noteHtml||"");
+
+      return `<div class="xcard">
+        <div class="xnum">${i+1}</div>
+        <div class="xsentence">${tokHtml}</div>
+        ${boxesHtml ? `<div class="xideas">${boxesHtml}</div>` : ""}
+        ${noteHtml ? `<div class="xnote">${noteHtml}</div>` : ""}
+      </div>`;
+    }).join("");
+
+    return `<!doctype html>
+<html><head><meta charset="utf-8"><title>Linear Thinking — Notes</title><style>
+  body{font-family:Georgia,"Times New Roman",serif; max-width:720px; margin:0 auto; padding:40px 20px 80px; background:#f5f6fb; color:#1b1f2e;}
+  h1{font-family:Georgia,serif; font-size:24px; margin:0 0 28px;}
+  .xcard{background:#fff; border:1px solid #d8dbea; border-radius:14px; padding:18px 20px; margin:20px 0; position:relative;}
+  .xnum{position:absolute; top:-12px; left:-10px; width:27px; height:27px; border-radius:50%; background:#4338ca; color:#fff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 1px 4px rgba(0,0,0,.18);}
+  .xsentence{font-size:16px; line-height:1.9;}
+  .xtok{display:inline-block; padding:2px 5px; border-radius:5px;}
+  .xsel-run{display:inline-flex; align-items:baseline; gap:5px; border:1.5px solid #d6127e; border-radius:999px; background:rgba(214,18,126,.09); padding:1px 6px; margin:0 2px;}
+  .xsel{background:transparent; color:#d6127e; padding:1px 0;}
+  .xdim{color:#8a8fa3; opacity:.6;}
+  .xideas{margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;}
+  .xidea{padding:7px 12px; border-radius:8px; font-weight:600; font-size:14px;}
+  .xyellow{background:#fff0a0; color:#5c4a00;}
+  .xblue{background:#cfe3ff; color:#17408f;}
+  .xgreen{background:#d7f5d0; color:#1f6b1f;}
+  .xred{background:#ffd9d9; color:#8f1f1f;}
+  .xnote{margin-top:12px; font-size:15px; color:#2a2d3a; background:#eef0f7; border-radius:9px; padding:10px 13px; line-height:1.65;}
+  .xnote b,.xnote strong{font-weight:700;} .xnote i,.xnote em{font-style:italic;} .xnote u{text-decoration:underline;}
+</style></head>
+<body>
+  <h1>Linear Thinking — tổng hợp các câu đã đọc cấu trúc</h1>
+  ${cards || '<p>Chưa có câu nào.</p>'}
+</body></html>`;
+  }
+
+  async function handleExportHtml(){
+    if(!state.downloads){ toast("Không xuất file được ở đây."); return; }
+    if(state.sentences.length===0){ toast("Chưa có câu nào để xuất."); return; }
+    try{
+      await state.downloads.save({ filename: "linear-thinking-notes.html", data: buildExportHtml() });
+      toast("Đã lưu file.");
+    }catch(e){
+      if(e && e.code === "declined") return;
+      console.error(e);
+      toast("Không xuất được file, thử lại.");
+    }
+  }
+
+  // ---------- Paragraph export: standalone, read-only HTML a student/colleague can open and click
+  // through (Ẩn câu gốc / Ẩn Simplified / Linear Model), with no way to edit anything -- all the data
+  // is baked into the file as plain JSON, the toggle buttons just swap what's shown. ----------
+  function buildParagraphExportHtml(p){
+    const sentences = (p.sentences||[]).map((s,sidx)=>{
+      const tokens = tokenize(s.text);
+      const sel = new Set(s.selected||[]);
+      const idxs = Array.from(sel).sort((a,b)=>a-b);
+      const runs = [];
+      for(const i of idxs){
+        const last = runs[runs.length-1];
+        if(last && i === last[last.length-1]+1) last.push(i); else runs.push([i]);
+      }
+      const simplifiedChips = runs.map(run=>run.map(i=>tokens[i]).join(" "));
+      const boxes = normMiBoxes(s.mainIdeaBoxes)
+        .map(b=>({ id:b.id, text:(b.text||"").trim(), color:b.color }))
+        .filter(b=>b.text);
+      return { number: sidx+1, text: s.text, checked: !!s.checked, simplifiedChips, boxes };
+    });
+    const boxIds = new Set();
+    sentences.forEach(s=>s.boxes.forEach(b=>boxIds.add(b.id)));
+    const connections = (p.connections||[])
+      .map(c=>({ aBoxId:c.aBoxId, bBoxId:c.bBoxId }))
+      .filter(c=>boxIds.has(c.aBoxId) && boxIds.has(c.bBoxId));
+    const finalBoxes = normMiBoxes(p.finalMainIdea).map(b=>({ text:(b.text||"").trim(), color:b.color })).filter(b=>b.text);
+
+    const dataStr = JSON.stringify({ sentences, connections, finalBoxes }).replace(/</g, "\\u003c");
+
+    return `<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Linear Thinking — Kết quả đoạn văn</title>
+<style>
+  :root{
+    --bg:#f5f6fb; --surface:#ffffff; --border:#d8dbea; --text:#1b1f2e; --text-dim:#5b6178; --accent:#4338ca;
+    --idea-yellow-bg:#fff0a0; --idea-yellow-text:#5c4a00;
+    --idea-blue-bg:#cfe3ff; --idea-blue-text:#17408f;
+    --idea-green-bg:#d7f5d0; --idea-green-text:#1f6b1f;
+    --idea-red-bg:#ffd9d9; --idea-red-text:#8f1f1f;
+  }
+  *{box-sizing:border-box;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; max-width:760px; margin:0 auto; padding:32px 18px 70px; background:var(--bg); color:var(--text);}
+  h1{font-size:20px; margin:0 0 6px;}
+  p.sub{font-size:13px; color:var(--text-dim); margin:0 0 20px;}
+  .toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:22px;}
+  .pv-btn{padding:9px 14px; border-radius:10px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-size:13px; font-weight:600; cursor:pointer;}
+  .pv-btn.active{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .pv-wrap{position:relative;}
+  .pv-svg{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible;}
+  .pv-conn-line{fill:none; stroke:var(--accent); stroke-width:2; stroke-dasharray:5 5; opacity:.85;}
+  .pv-row{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:10px; position:relative; z-index:1;}
+  .pv-num{width:24px; height:24px; border-radius:50%; background:var(--accent); color:#fff; font-size:12px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; margin-right:8px; vertical-align:middle;}
+  .pv-sentence{font-size:15px; line-height:1.6;}
+  .pv-simplified{margin-top:8px; font-size:14px; line-height:2;}
+  .pv-simplified-label{font-size:11px; font-weight:700; letter-spacing:0; text-transform:none; color:var(--accent); margin-right:8px;}
+  .pv-chip{display:inline-block; background:var(--border); padding:4px 9px; border-radius:7px; margin:2px 4px 2px 0;}
+  .pv-mi-row{margin-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .pv-mi-label{font-size:11px; font-weight:700; letter-spacing:0; text-transform:none; color:var(--accent);}
+  .pv-pill{display:inline-block; padding:6px 12px; border-radius:8px; font-weight:700; font-size:14px;}
+  .idea-yellow{background:var(--idea-yellow-bg); color:var(--idea-yellow-text);}
+  .idea-blue{background:var(--idea-blue-bg); color:var(--idea-blue-text);}
+  .idea-green{background:var(--idea-green-bg); color:var(--idea-green-text);}
+  .idea-red{background:var(--idea-red-bg); color:var(--idea-red-text);}
+  .pv-final{margin-top:16px; padding-top:14px; border-top:1px dashed var(--border); position:relative; z-index:1;}
+  .pv-final-label{font-size:12px; font-weight:700; letter-spacing:0; text-transform:none; color:var(--accent); margin-bottom:8px;}
+  .pv-lm-grid{display:grid; row-gap:10px; column-gap:16px; align-items:center; padding:4px 2px; position:relative; z-index:1;}
+  .pv-lm-cell{min-height:32px; display:flex; align-items:center;}
+  .pv-empty{padding:24px; text-align:center; color:var(--text-dim); font-size:14px;}
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#11131c; --surface:#181b29; --border:#2d3146; --text:#e7e9f2; --text-dim:#9a9fb8; --accent:#9b8cf2;
+      --idea-yellow-bg:#5c4b05; --idea-yellow-text:#ffe79a; --idea-blue-bg:#17335c; --idea-blue-text:#a8caff;
+      --idea-green-bg:#1f3d20; --idea-green-text:#9fe6a0; --idea-red-bg:#4a1f1f; --idea-red-text:#ffb3b3; }
+    .pv-chip{background:#242744;}
+  }
+</style></head>
+<body>
+  <h1>Linear Thinking — kết quả đoạn văn</h1>
+  <p class="sub">Bản xem kết quả (chỉ xem, không chỉnh sửa được).</p>
+  <div class="toolbar">
+    <button class="pv-btn" id="t-recap">Ẩn câu gốc</button>
+    <button class="pv-btn" id="t-hidesimplified">Ẩn Simplified</button>
+    <button class="pv-btn" id="t-linear">Linear Model</button>
+  </div>
+  <div id="root"></div>
+<script>
+(function(){
+  var DATA = ${dataStr};
+  var view = { recap:false, hideSimplified:false, linear:false };
+  var root = document.getElementById("root");
+
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+
+  function renderNormal(){
+    var html = '<div class="pv-wrap" id="pv-wrap"><svg class="pv-svg" id="pv-svg"></svg>';
+    DATA.sentences.forEach(function(s){
+      html += '<div class="pv-row">';
+      html += '<span class="pv-num">'+s.number+'</span>';
+      if(!view.recap) html += '<span class="pv-sentence">'+esc(s.text)+'</span>';
+      if(s.checked){
+        if(!view.hideSimplified){
+          var chips = s.simplifiedChips.length
+            ? s.simplifiedChips.map(function(c){ return '<span class="pv-chip">'+esc(c)+'</span>'; }).join("")
+            : '<span style="color:var(--text-dim);">(chưa bôi phần nào)</span>';
+          html += '<div class="pv-simplified"><span class="pv-simplified-label">Simplified</span>'+chips+'</div>';
+        }
+        if(s.boxes.length){
+          var pills = s.boxes.map(function(b){ return '<span class="pv-pill '+b.color+'" data-box-id="'+esc(b.id)+'">'+esc(b.text)+'</span>'; }).join("");
+          html += view.hideSimplified
+            ? '<div class="pv-mi-row"><span class="pv-mi-label">Main idea</span>'+pills+'</div>'
+            : '<div class="pv-mi-row"><span class="pv-mi-label">Main idea</span>'+pills+'</div>';
+        }
+      }
+      html += '</div>';
+    });
+    if(DATA.finalBoxes.length){
+      var fpills = DATA.finalBoxes.map(function(b){ return '<span class="pv-pill '+b.color+'">'+esc(b.text)+'</span>'; }).join(" ");
+      html += '<div class="pv-final"><div class="pv-final-label">Main Idea (cả đoạn)</div>'+fpills+'</div>';
+    }
+    html += '</div>';
+    root.innerHTML = html;
+    requestAnimationFrame(drawConnections);
+  }
+
+  function renderLinear(){
+    var rows = DATA.sentences.filter(function(s){ return s.checked && s.boxes.length; });
+    if(rows.length===0){
+      root.innerHTML = '<div class="pv-empty">Chưa có câu nào được simplify + điền Main Idea.</div>';
+      return;
+    }
+    var parent = {};
+    function find(x){ parent[x] = (parent[x]===undefined)?x:parent[x]; while(parent[x]!==x){ parent[x]=parent[parent[x]]; x=parent[x]; } return x; }
+    function union(a,b){ var ra=find(a), rb=find(b); if(ra!==rb) parent[ra]=rb; }
+    rows.forEach(function(r){ r.boxes.forEach(function(b){ find(b.id); }); });
+    DATA.connections.forEach(function(c){
+      if(parent[c.aBoxId]===undefined) parent[c.aBoxId]=c.aBoxId;
+      if(parent[c.bBoxId]===undefined) parent[c.bBoxId]=c.bBoxId;
+      union(c.aBoxId, c.bBoxId);
+    });
+    var colOfRoot = new Map();
+    rows.forEach(function(r){ r.boxes.forEach(function(b){ var rt=find(b.id); if(!colOfRoot.has(rt)) colOfRoot.set(rt, colOfRoot.size); }); });
+    var colCount = Math.max(1, colOfRoot.size);
+
+    var html = '<div class="pv-wrap" id="pv-wrap"><svg class="pv-svg" id="pv-svg"></svg>';
+    html += '<div class="pv-lm-grid" style="grid-template-columns:26px repeat('+colCount+', minmax(70px, max-content));">';
+    rows.forEach(function(r){
+      var cellsByCol = new Array(colCount).fill(null);
+      r.boxes.forEach(function(b){ var col = colOfRoot.get(find(b.id)); if(cellsByCol[col]===null) cellsByCol[col]=b; });
+      html += '<span class="pv-num">'+r.number+'</span>';
+      for(var col=0; col<colCount; col++){
+        var b = cellsByCol[col];
+        html += '<div class="pv-lm-cell">'+(b ? '<span class="pv-pill '+b.color+'" data-box-id="'+esc(b.id)+'">'+esc(b.text)+'</span>' : '')+'</div>';
+      }
+    });
+    html += '</div>';
+    if(DATA.finalBoxes.length){
+      var fpills2 = DATA.finalBoxes.map(function(b){ return '<span class="pv-pill '+b.color+'">'+esc(b.text)+'</span>'; }).join(" ");
+      html += '<div class="pv-final"><div class="pv-final-label">Main Idea (cả đoạn)</div>'+fpills2+'</div>';
+    }
+    html += '</div>';
+    root.innerHTML = html;
+    requestAnimationFrame(drawConnections);
+  }
+
+  function drawConnections(){
+    var wrap = document.getElementById("pv-wrap");
+    var svg = document.getElementById("pv-svg");
+    if(!wrap || !svg) return;
+    var w = wrap.scrollWidth, h = wrap.scrollHeight;
+    svg.setAttribute("width", w);
+    svg.setAttribute("height", h);
+    svg.setAttribute("viewBox", "0 0 "+w+" "+h);
+    var wrapRect = wrap.getBoundingClientRect();
+    var paths = DATA.connections.map(function(c){
+      var aEl = wrap.querySelector('[data-box-id="'+CSS.escape(c.aBoxId)+'"]');
+      var bEl = wrap.querySelector('[data-box-id="'+CSS.escape(c.bBoxId)+'"]');
+      if(!aEl || !bEl) return "";
+      var ar = aEl.getBoundingClientRect(), br = bEl.getBoundingClientRect();
+      var x1 = ar.left - wrapRect.left + ar.width/2, y1 = ar.bottom - wrapRect.top;
+      var x2 = br.left - wrapRect.left + br.width/2, y2 = br.top - wrapRect.top;
+      var midY = (y1+y2)/2;
+      return '<path d="M '+x1+' '+y1+' C '+x1+' '+midY+', '+x2+' '+midY+', '+x2+' '+y2+'" class="pv-conn-line"/>';
+    }).join("");
+    svg.innerHTML = paths;
+  }
+
+  function syncToolbar(){
+    document.getElementById("t-recap").style.display = view.linear ? "none" : "";
+    document.getElementById("t-hidesimplified").style.display = view.linear ? "none" : "";
+  }
+
+  function render(){
+    syncToolbar();
+    if(view.linear) renderLinear(); else renderNormal();
+  }
+
+  document.getElementById("t-recap").onclick = function(){
+    view.recap = !view.recap;
+    this.classList.toggle("active", view.recap);
+    this.textContent = view.recap ? "Đang ẩn câu gốc" : "Ẩn câu gốc";
+    render();
+  };
+  document.getElementById("t-hidesimplified").onclick = function(){
+    view.hideSimplified = !view.hideSimplified;
+    this.classList.toggle("active", view.hideSimplified);
+    this.textContent = view.hideSimplified ? "Đang ẩn Simplified" : "Ẩn Simplified";
+    render();
+  };
+  document.getElementById("t-linear").onclick = function(){
+    view.linear = !view.linear;
+    this.classList.toggle("active", view.linear);
+    this.textContent = view.linear ? "Thoát Linear Model" : "Linear Model";
+    render();
+  };
+  window.addEventListener("resize", function(){ requestAnimationFrame(drawConnections); });
+
+  render();
+})();
+<\/script>
+</body></html>`;
+  }
+
+  async function handleExportParagraphHtml(pid){
+    if(!state.downloads){ toast("Không xuất file được ở đây."); return; }
+    const p = getParagraph(pid);
+    if(!p){ toast("Không tìm thấy đoạn này."); return; }
+    try{
+      const filename = "linear-thinking-doan-" + (p.id || "export") + ".html";
+      await state.downloads.save({ filename, data: buildParagraphExportHtml(p) });
+      toast("Đã lưu file.");
+    }catch(e){
+      if(e && e.code === "declined") return;
+      console.error(e);
+      toast("Không xuất được file, thử lại.");
+    }
+  }
+
+  function renderSingleView(){
+    const savedFocus = captureFocus();
+    let html = `<p class="intro">
+      Nhập một câu, <b>bôi chọn</b> (chạm vào từng từ) những thành phần bạn cho là cốt lõi của câu,
+      rồi bấm <b>&#10003;</b> để simplify. Sau đó tự gõ <b>Main Idea</b> của câu vào hai ô bên dưới.
+    </p>`;
+    html += `<div class="single-toolbar">
+      <input type="text" id="new-sent-input" placeholder="Nhập một câu tiếng Anh...">
+      <button class="primary" id="add-sent-btn">Thêm câu</button>
+      <button class="ghost" id="bulk-open-btn">+ Nhiều câu / Ảnh</button>
+      <button class="eye-btn ${state.recap?'active':''}" id="recap-toggle">${eyeIcon(!state.recap)} ${state.recap?'Đang ẩn câu gốc':'Ẩn câu gốc, chỉ xem Main Idea'}</button>
+      <button class="ghost" id="compile-btn">Tổng hợp Note</button>
+      ${state.downloads ? `<button class="ghost" id="export-btn">Xuất file HTML</button>` : ``}
+    </div>`;
+
+    if(state.sentences.length===0){
+      html += `<div class="empty-state">Chưa có câu nào. Nhập một câu ở trên để bắt đầu.</div>`;
+    } else {
+      const chronological = state.sentences.slice().sort((a,b)=>(a.order||0)-(b.order||0));
+      const numberMap = {};
+      chronological.forEach((s,i)=>{ numberMap[s.id] = i+1; });
+      const displayList = state.sentences.slice().sort((a,b)=>(b.order||0)-(a.order||0));
+      html += `<div id="sent-list">` + displayList.map(s=>renderSentCardHtml(s, numberMap[s.id])).join("") + `</div>`;
+    }
+
+    html += renderCompileModal();
+    html += renderBulkModal();
+
+    singleEl.innerHTML = html;
+
+    $("#add-sent-btn").onclick = ()=>{
+      const inp = $("#new-sent-input");
+      addSentence(inp.value);
+      inp.value = "";
+      inp.focus();
+    };
+    $("#new-sent-input").onkeydown = (e)=>{
+      if(e.key==="Enter"){ e.preventDefault(); $("#add-sent-btn").click(); }
+    };
+    $("#recap-toggle").onclick = ()=>{ state.recap = !state.recap; renderSingleView(); };
+    $("#compile-btn").onclick = ()=>{ state.showCompile = true; renderSingleView(); };
+    const exportBtn = $("#export-btn");
+    if(exportBtn) exportBtn.onclick = handleExportHtml;
+    $("#bulk-open-btn").onclick = ()=>{ state.showBulk = true; renderSingleView(); };
+
+    $$(".tok", singleEl).forEach(el=>{
+      el.onclick = (e)=>{
+        if(el.classList.contains("locked")) return;
+        if(e.altKey) return; // fully handled by the Option-drag mousedown/mouseup flow below
+        const idx = parseInt(el.dataset.idx,10);
+        if(e.metaKey || e.ctrlKey){ toggleTokSplit(el.dataset.id, idx); }
+        else { toggleTok(el.dataset.id, idx); }
+      };
+      el.onmousedown = (e)=>{
+        if(e.altKey && !el.classList.contains("locked")){ e.preventDefault(); startAltDrag(el); }
+      };
+    });
+    $$(".sel-run, .sel2-run", singleEl).forEach(run=>{
+      run.onclick = (e)=>{
+        if(e.altKey) return;
+        if(e.target.closest(".tok")) return; // already handled by that word's own click handler
+        const best = nearestTokInRun(run, e.clientX);
+        if(!best || best.classList.contains("locked")) return;
+        const idx = parseInt(best.dataset.idx,10);
+        if(e.metaKey || e.ctrlKey){ toggleTokSplit(best.dataset.id, idx); }
+        else { toggleTok(best.dataset.id, idx); }
+      };
+      run.onmousedown = (e)=>{
+        if(!e.altKey || e.target.closest(".tok")) return;
+        const best = nearestTokInRun(run, e.clientX);
+        if(!best || best.classList.contains("locked")) return;
+        e.preventDefault();
+        startAltDrag(best);
+      };
+    });
+    $$("[data-action='check']", singleEl).forEach(el=>{
+      el.onclick = ()=>updateSentence(el.dataset.id, {checked:true});
+    });
+    $$("[data-action='edit']", singleEl).forEach(el=>{
+      el.onclick = ()=>updateSentence(el.dataset.id, {checked:false});
+    });
+    $$("[data-action='delete']", singleEl).forEach(el=>{
+      el.onclick = ()=>deleteSentence(el.dataset.id);
+    });
+    wireMiBoxRows(singleEl);
+    $$(".note-editable", singleEl).forEach(el=>{
+      const flush = ()=>{
+        clearTimeout(el._t);
+        updateSentence(el.dataset.id, { noteHtml: sanitizeNoteHtml(el.innerHTML) });
+      };
+      el.oninput = ()=>{ clearTimeout(el._t); el._t = setTimeout(flush, 500); };
+      el.onkeydown = (e)=>{ if(e.key==="Escape") e.target.blur(); };
+      el.onblur = ()=>{ clearTimeout(el._t); setTimeout(flush, 0); };
+    });
+    $$(".note-toolbar button", singleEl).forEach(btn=>{
+      btn.addEventListener("mousedown", (e)=>{ e.preventDefault(); }); // keep the editable's selection
+      btn.addEventListener("click", ()=>{
+        const id = btn.closest(".note-toolbar").dataset.id;
+        const editable = singleEl.querySelector(`.note-editable[data-id="${cssEsc(id)}"]`);
+        if(!editable) return;
+        editable.focus();
+        const cmd = btn.dataset.cmd;
+        if(cmd === "highlight"){
+          const hlMap = { pink:"#ffcdf0", yellow:"#fff2a0", blue:"#bfe3ff", green:"#bdf0cf" };
+          const color = hlMap[btn.dataset.hl] || hlMap.pink;
+          document.execCommand("hiliteColor", false, color);
+        } else if(cmd === "clearhl"){
+          document.execCommand("hiliteColor", false, "transparent");
+        } else {
+          document.execCommand(cmd, false, null);
+        }
+        clearTimeout(editable._t);
+        editable._t = setTimeout(()=>{
+          updateSentence(id, { noteHtml: sanitizeNoteHtml(editable.innerHTML) });
+        }, 300);
+      });
+    });
+
+    const compileOverlay = $("#compile-overlay", singleEl);
+    if(compileOverlay){
+      const closeCompile = ()=>{ state.showCompile = false; renderSingleView(); };
+      compileOverlay.onclick = (e)=>{ if(e.target === compileOverlay) closeCompile(); };
+      $("#compile-close").onclick = closeCompile;
+      $("#compile-close-btn").onclick = closeCompile;
+      const copyBtn = $("#compile-copy");
+      if(copyBtn){
+        copyBtn.onclick = async ()=>{
+          const text = compileNotes();
+          try{
+            await navigator.clipboard.writeText(text);
+            toast("Đã copy toàn bộ note.");
+          }catch(e){
+            const ta = $("#compile-text");
+            if(ta){ ta.focus(); ta.select(); }
+            toast("Không copy tự động được — đã chọn sẵn, bạn bấm Ctrl/Cmd+C.");
+          }
+        };
+      }
+    }
+
+    const bulkOverlay = $("#bulk-overlay", singleEl);
+    if(bulkOverlay){
+      const closeBulk = ()=>{ state.showBulk=false; state.bulkFiles=[]; renderSingleView(); };
+      bulkOverlay.onclick = (e)=>{ if(e.target===bulkOverlay) closeBulk(); };
+      $("#bulk-close").onclick = closeBulk;
+      $("#bulk-cancel").onclick = closeBulk;
+      const fileInput = $("#bulk-images");
+      if(fileInput){
+        fileInput.onchange = ()=>{
+          state.bulkFiles = Array.from(fileInput.files || []);
+          renderSingleView();
+        };
+      }
+      $("#bulk-submit").onclick = handleBulkSubmit;
+      const slidesBtn = $("#bulk-slides-fetch");
+      if(slidesBtn) slidesBtn.onclick = handleSlidesFetch;
+    }
+
+    restoreFocus(savedFocus);
+  }
+
+  // ---------- PARAGRAPH MODE (Thêm đoạn văn) ----------
+  function subscribeParagraphs(){
+    state.db.collection("paragraphs").orderBy("order","desc").limit(200).onSnapshot(
+      (snap)=>{
+        const now = Date.now();
+        state.paragraphs = snap.docs.map(d=>{
+          if((state.localWriteUntil[d.id]||0) > now){
+            const existing = state.paragraphs.find(x=>x.id===d.id);
+            if(existing) return existing;
+          }
+          return Object.assign({id:d.id}, d.data());
+        });
+        if(!paragraphEl.hidden && !userIsTypingInField()) renderParagraphView();
+      },
+      (err)=>{ console.error(err); }
+    );
+  }
+
+  function getParagraph(id){
+    return state.paragraphs.find(x=>x.id===id) || null;
+  }
+
+  async function addParagraph(text){
+    text = (text||"").trim();
+    if(!text){ toast("Bạn chưa dán đoạn văn."); return; }
+    const sentencesArr = splitSentencesLocal(text).map(t=>({ text: t, selected: [], checked: false, mainIdeaBoxes: ["",""] }));
+    if(sentencesArr.length===0){ toast("Không tách được câu nào."); return; }
+    const doc = {
+      text, sentences: sentencesArr,
+      relationships: Array(Math.max(0, sentencesArr.length-1)).fill(""),
+      connections: [], finalMainIdea: ["",""],
+      uiRecap: false, uiHideSimplified: false, uiLinearModel: false,
+      order: Date.now(), createdAt: Date.now()
+    };
+    state.paraDraftText = "";
+    state.paraBulkFiles = [];
+    if(state.db){
+      try{
+        const ref = await state.db.collection("paragraphs").add(doc);
+        state.currentParagraphId = ref.id;
+        state.paraRecap = false;
+        renderParagraphView();
+      }catch(e){ console.error(e); toast("Không lưu được đoạn này."); }
+    } else {
+      const id = "localp_"+(state.localIdSeq++);
+      state.paragraphs.push(Object.assign({id}, doc));
+      state.currentParagraphId = id;
+      state.paraRecap = false;
+      renderParagraphView();
+    }
+  }
+
+  // "Câu hỏi lẻ": same doc shape as addParagraph() above (so it's a real paragraph doc, in the SAME
+  // "paragraphs" collection, and gets the exact same detail/connections machinery for free), plus an
+  // isQa flag and a parallel questionSentences array split from its own textarea the same way.
+  async function addQaParagraph(passageText, questionText){
+    passageText = (passageText||"").trim();
+    questionText = (questionText||"").trim();
+    if(!passageText){ toast("Bạn chưa nhập thông tin trong bài đọc."); return; }
+    if(!questionText){ toast("Bạn chưa nhập câu hỏi."); return; }
+    const sentencesArr = splitSentencesLocal(passageText).map(t=>({ text: t, selected: [], checked: false, mainIdeaBoxes: ["",""] }));
+    const questionArr = splitSentencesLocal(questionText).map(t=>({ text: t, selected: [], checked: false, mainIdeaBoxes: ["",""] }));
+    if(sentencesArr.length===0){ toast("Không tách được câu nào trong bài đọc."); return; }
+    if(questionArr.length===0){ toast("Không tách được câu hỏi."); return; }
+    const doc = {
+      text: passageText, sentences: sentencesArr,
+      relationships: Array(Math.max(0, sentencesArr.length-1)).fill(""),
+      connections: [], finalMainIdea: ["",""],
+      isQa: true, questionSentences: questionArr, qaNoteHtml: "",
+      uiRecap: false, uiHideSimplified: false, uiLinearModel: false,
+      order: Date.now(), createdAt: Date.now()
+    };
+    state.qaDraftPassageText = "";
+    state.qaDraftQuestionText = "";
+    state.paraBulkFiles = [];
+    if(state.db){
+      try{
+        const ref = await state.db.collection("paragraphs").add(doc);
+        state.currentParagraphId = ref.id;
+        state.paraRecap = false;
+        renderParagraphView();
+      }catch(e){ console.error(e); toast("Không lưu được câu hỏi này."); }
+    } else {
+      const id = "localp_"+(state.localIdSeq++);
+      state.paragraphs.push(Object.assign({id}, doc));
+      state.currentParagraphId = id;
+      state.paraRecap = false;
+      renderParagraphView();
+    }
+  }
+
+  function updateParagraph(id, patch){
+    const p = getParagraph(id);
+    if(p) Object.assign(p, patch);
+    if(!userIsTypingInField()) renderParagraphView();
+    if(state.db){
+      markLocalWrite(id);
+      state.db.collection("paragraphs").doc(id).update(patch).catch(err=>{ console.error(err); });
+    }
+  }
+
+  function deleteParagraph(id){
+    if(state.currentParagraphId === id) state.currentParagraphId = null;
+    if(state.db){
+      state.db.collection("paragraphs").doc(id).delete().catch(err=>{ console.error(err); });
+    } else {
+      state.paragraphs = state.paragraphs.filter(x=>x.id!==id);
+    }
+    renderParagraphView();
+  }
+
+  function openParagraph(id){
+    state.currentParagraphId = id;
+    // Restore the reading/review view mode this paragraph was left in (persisted on the paragraph
+    // itself), rather than always snapping back to the full default view -- so a paragraph the user
+    // already finished reading (recap / hide-simplified / linear model) reopens exactly as they left it.
+    const p = getParagraph(id);
+    state.paraRecap = !!(p && p.uiRecap);
+    state.paraHideSimplified = !!(p && p.uiHideSimplified);
+    state.paraLinearModel = !!(p && p.uiLinearModel);
+    renderParagraphView();
+  }
+
+  function updateParaSentence(pid, sidx, patch){
+    const p = getParagraph(pid);
+    if(!p) return;
+    const sentences = (p.sentences||[]).slice();
+    sentences[sidx] = Object.assign({}, sentences[sidx], patch);
+    updateParagraph(pid, { sentences });
+  }
+
+  // ---------- Qa ("Câu hỏi lẻ") question half -- same per-sentence shape as a paragraph sentence,
+  // stored as p.questionSentences alongside the passage's own p.sentences on the same doc. Structure
+  // only (simplify + Main Idea box), deliberately no cross-sentence connections -- mirrors toggleParaTok*
+  // / updateParaSentence above almost exactly, just addressing questionSentences instead of sentences. ----------
+  function updateQaQuestionSentence(pid, sidx, patch){
+    const p = getParagraph(pid);
+    if(!p) return;
+    const qsentences = (p.questionSentences||[]).slice();
+    qsentences[sidx] = Object.assign({}, qsentences[sidx], patch);
+    updateParagraph(pid, { questionSentences: qsentences });
+  }
+
+  function toggleQaQuestionTok(pid, sidx, tidx){
+    const p = getParagraph(pid);
+    const s = p && (p.questionSentences||[])[sidx];
+    if(!s || s.checked) return;
+    const sel = new Set(s.selected||[]);
+    if(sel.has(tidx)) sel.delete(tidx); else sel.add(tidx);
+    updateQaQuestionSentence(pid, sidx, { selected: Array.from(sel).sort((a,b)=>a-b) });
+  }
+
+  function toggleQaQuestionTokSplit(pid, sidx, tidx){
+    const p = getParagraph(pid);
+    const s = p && (p.questionSentences||[])[sidx];
+    if(!s || s.checked) return;
+    const sel = new Set(s.selected||[]);
+    const splits = new Set(s.selSplitAfter||[]);
+    if(sel.has(tidx) && sel.has(tidx+1)){
+      if(splits.has(tidx)) splits.delete(tidx); else splits.add(tidx);
+    } else if(sel.has(tidx-1) && sel.has(tidx)){
+      const b = tidx-1;
+      if(splits.has(b)) splits.delete(b); else splits.add(b);
+    } else {
+      toggleQaQuestionTok(pid, sidx, tidx);
+      return;
+    }
+    updateQaQuestionSentence(pid, sidx, { selSplitAfter: Array.from(splits).sort((a,b)=>a-b) });
+  }
+
+  function toggleParaTok(pid, sidx, tidx){
+    const p = getParagraph(pid);
+    const s = p && p.sentences[sidx];
+    if(!s || s.checked) return;
+    const sel = new Set(s.selected||[]);
+    if(sel.has(tidx)) sel.delete(tidx); else sel.add(tidx);
+    updateParaSentence(pid, sidx, { selected: Array.from(sel).sort((a,b)=>a-b) });
+  }
+
+  function toggleParaTokSplit(pid, sidx, tidx){
+    const p = getParagraph(pid);
+    const s = p && p.sentences[sidx];
+    if(!s || s.checked) return;
+    const sel = new Set(s.selected||[]);
+    const splits = new Set(s.selSplitAfter||[]);
+    if(sel.has(tidx) && sel.has(tidx+1)){
+      if(splits.has(tidx)) splits.delete(tidx); else splits.add(tidx);
+    } else if(sel.has(tidx-1) && sel.has(tidx)){
+      const b = tidx-1;
+      if(splits.has(b)) splits.delete(b); else splits.add(b);
+    } else {
+      toggleParaTok(pid, sidx, tidx);
+      return;
+    }
+    updateParaSentence(pid, sidx, { selSplitAfter: Array.from(splits).sort((a,b)=>a-b) });
+  }
+
+  function toggleParaTokSecondary(pid, sidx, tidx){
+    const p = getParagraph(pid);
+    const s = p && p.sentences[sidx];
+    if(!s || s.checked) return;
+    const sel2 = new Set(s.selSecondary||[]);
+    if(sel2.has(tidx)) sel2.delete(tidx); else sel2.add(tidx);
+    updateParaSentence(pid, sidx, { selSecondary: Array.from(sel2).sort((a,b)=>a-b) });
+  }
+
+  // Option/Alt+click-and-drag from the first word of a phrase to the last paints the whole range as
+  // secondary in one gesture, instead of clicking every word one by one. A plain Option+click with no
+  // movement still falls back to the single-word toggle. Works across both tabs: `scope` identifies
+  // which sentence the drag belongs to (by single-sentence id, or by paragraph id + sentence index) so
+  // the drag never bleeds into a neighboring sentence's tokens.
+  let altDragState = null;
+
+  function altDragScopeFor(el){
+    // A Qa question token carries the SAME data-pid/data-sidx as its sibling passage sentence (both
+    // live on the same paragraph doc) -- data-qside="q" is the only thing telling the two apart, so it
+    // must be checked before the generic "has data-pid" para branch.
+    if(el.dataset.qside === "q") return { kind:"qaQuestion", pid: el.dataset.pid, sidx: parseInt(el.dataset.sidx,10) };
+    return el.dataset.pid !== undefined
+      ? { kind:"para", pid: el.dataset.pid, sidx: parseInt(el.dataset.sidx,10) }
+      : { kind:"single", id: el.dataset.id };
+  }
+  function altDragIdxOf(scope, el){
+    return (scope.kind === "para" || scope.kind === "qaQuestion") ? parseInt(el.dataset.tidx,10) : parseInt(el.dataset.idx,10);
+  }
+  function altDragTokSelector(scope){
+    if(scope.kind === "qaQuestion") return `.tok[data-pid="${cssEsc(scope.pid)}"][data-sidx="${scope.sidx}"][data-qside="q"]`;
+    return scope.kind === "para"
+      ? `.tok[data-pid="${cssEsc(scope.pid)}"][data-sidx="${scope.sidx}"]:not([data-qside])`
+      : `.tok[data-id="${cssEsc(scope.id)}"]`;
+  }
+  function altDragScopeMatches(scope, el){
+    if(scope.kind === "qaQuestion") return (el.dataset.pid === scope.pid && parseInt(el.dataset.sidx,10) === scope.sidx && el.dataset.qside === "q");
+    return scope.kind === "para"
+      ? (el.dataset.pid === scope.pid && parseInt(el.dataset.sidx,10) === scope.sidx && el.dataset.qside === undefined)
+      : (el.dataset.id === scope.id);
+  }
+  function altDragRoot(scope){
+    return (scope.kind === "para" || scope.kind === "qaQuestion") ? paragraphEl : singleEl;
+  }
+  function altDragSentenceFor(scope){
+    if(scope.kind === "para"){
+      const p = getParagraph(scope.pid);
+      return p && p.sentences[scope.sidx];
+    }
+    if(scope.kind === "qaQuestion"){
+      const p = getParagraph(scope.pid);
+      return p && (p.questionSentences||[])[scope.sidx];
+    }
+    return state.sentences.find(x=>x.id===scope.id);
+  }
+
+  function startAltDrag(el){
+    if(el.classList.contains("locked")) return;
+    const scope = altDragScopeFor(el);
+    const idx = altDragIdxOf(scope, el);
+    // Starting the drag ON an already-secondary word erases the dragged range instead of painting it --
+    // same gesture, same key, the start point's own state decides add vs. remove.
+    const s = altDragSentenceFor(scope);
+    const erase = !!(s && (s.selSecondary||[]).includes(idx));
+    altDragState = { scope, startIdx: idx, lastIdx: idx, moved: false, erase };
+    updateAltDragPreview();
+    document.addEventListener("mousemove", onAltDragMove);
+    document.addEventListener("mouseup", onAltDragUp, { once: true });
+  }
+
+  function updateAltDragPreview(){
+    if(!altDragState) return;
+    const { scope, startIdx, lastIdx, erase } = altDragState;
+    const lo = Math.min(startIdx, lastIdx), hi = Math.max(startIdx, lastIdx);
+    $$(altDragTokSelector(scope), altDragRoot(scope)).forEach(el=>{
+      const idx = altDragIdxOf(scope, el);
+      const inRange = idx >= lo && idx <= hi;
+      el.classList.toggle("drag-preview", inRange && !erase);
+      el.classList.toggle("drag-erase", inRange && erase);
+    });
+  }
+
+  function onAltDragMove(e){
+    if(!altDragState) return;
+    const target = document.elementFromPoint(e.clientX, e.clientY);
+    const tokEl = target && target.closest ? target.closest(".tok") : null;
+    if(!tokEl || !altDragScopeMatches(altDragState.scope, tokEl)) return;
+    const idx = altDragIdxOf(altDragState.scope, tokEl);
+    if(idx !== altDragState.lastIdx){
+      altDragState.lastIdx = idx;
+      altDragState.moved = true;
+      updateAltDragPreview();
+    }
+  }
+
+  function onAltDragUp(){
+    document.removeEventListener("mousemove", onAltDragMove);
+    if(!altDragState) return;
+    const { scope, startIdx, lastIdx, moved, erase } = altDragState;
+    $$(altDragTokSelector(scope), altDragRoot(scope)).forEach(el=> el.classList.remove("drag-preview", "drag-erase"));
+    altDragState = null;
+
+    const s = altDragSentenceFor(scope);
+    if(!s || s.checked) return;
+    const sel2 = new Set(s.selSecondary||[]);
+    if(!moved){
+      if(sel2.has(startIdx)) sel2.delete(startIdx); else sel2.add(startIdx);
+    } else {
+      const lo = Math.min(startIdx,lastIdx), hi = Math.max(startIdx,lastIdx);
+      for(let i=lo;i<=hi;i++){ if(erase) sel2.delete(i); else sel2.add(i); }
+    }
+    const patch = { selSecondary: Array.from(sel2).sort((a,b)=>a-b) };
+    if(scope.kind === "para") updateParaSentence(scope.pid, scope.sidx, patch);
+    else if(scope.kind === "qaQuestion") updateQaQuestionSentence(scope.pid, scope.sidx, patch);
+    else updateSentence(scope.id, patch);
+  }
+
+  // Bakes stable ids (and colors) onto a sentence's Main Idea boxes, generating any that are missing.
+  // p.sentences[sidx] can be a frozen object straight from the realtime backend's snapshot data, so it
+  // must NEVER be mutated in place -- only p's own "sentences" property (a plain, locally-owned array)
+  // may be reassigned. This swaps in a fresh sentences array + sentence object holding the normalized
+  // boxes, then -- only if an id actually had to be invented just now -- schedules a background write
+  // so the id survives a reload instead of only existing for this render pass. Returns the normalized
+  // boxes array.
+  const pendingBakeFlush = new Set();
+  function scheduleBakeFlush(pid){
+    if(pendingBakeFlush.has(pid)) return;
+    pendingBakeFlush.add(pid);
+    setTimeout(()=>{
+      pendingBakeFlush.delete(pid);
+      const p = getParagraph(pid);
+      if(!p || !state.db) return;
+      markLocalWrite(pid);
+      state.db.collection("paragraphs").doc(pid).update({ sentences: p.sentences }).catch(err=>{ console.error(err); });
+    }, 0);
+  }
+  function bakeMiBoxIds(p, sidx){
+    const s = p.sentences[sidx];
+    if(!s) return [];
+    const already = s.mainIdeaBoxes && s.mainIdeaBoxes.length &&
+      s.mainIdeaBoxes.every(b => b && typeof b === "object" && b.id);
+    const normalized = normMiBoxes(s.mainIdeaBoxes);
+    if(!already){
+      const newSentences = p.sentences.slice();
+      newSentences[sidx] = Object.assign({}, s, { mainIdeaBoxes: normalized });
+      p.sentences = newSentences;
+      scheduleBakeFlush(p.id);
+    }
+    return normalized;
+  }
+  function ensureBoxId(p, sidx, idx){
+    const arr = bakeMiBoxIds(p, sidx);
+    return arr[idx] ? arr[idx].id : null;
+  }
+
+  // ---------- Main Idea box connection dots: press-and-drag to connect ----------
+  // Pressing a dot starts a drag; a live dashed line follows the cursor; releasing over ANY part of
+  // another sentence's Main Idea box (not just its dot precisely) links to that box automatically.
+  // miDrag is a transient, non-persisted gesture — nothing is written until the drag completes on a
+  // valid target, so an aborted drag (released over empty space) leaves no trace.
+  let miDrag = null; // { pid, sidx, idx, x0, y0 } in viewport coordinates, while a drag is in progress
+
+  function wireMiConnectHandles(root){
+    $$(".mi-connect-handle", root).forEach(el=>{
+      el.addEventListener("mousedown", (e)=>{
+        if(e.button !== 0) return;
+        e.preventDefault();
+        const ctx = JSON.parse(el.dataset.ctx);
+        const r = el.getBoundingClientRect();
+        miDrag = { pid: ctx.pid, sidx: ctx.sidx, idx: ctx.idx, x0: r.left + r.width/2, y0: r.top + r.height/2 };
+        const svg = $("#para-connect-svg", paragraphEl);
+        if(svg && !svg.querySelector("#mi-drag-temp")){
+          const temp = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          temp.setAttribute("id", "mi-drag-temp");
+          temp.setAttribute("class", "para-conn-line para-conn-live");
+          svg.appendChild(temp);
+        }
+        document.addEventListener("mousemove", onMiDragMove);
+        document.addEventListener("mouseup", onMiDragUp, { once:true });
+      });
+    });
+  }
+
+  function onMiDragMove(e){
+    if(!miDrag) return;
+    const wrap = $("#para-connect-wrap", paragraphEl);
+    const svg = $("#para-connect-svg", paragraphEl);
+    if(!wrap || !svg) return;
+    const wrapRect = wrap.getBoundingClientRect();
+    const x1 = miDrag.x0 - wrapRect.left, y1 = miDrag.y0 - wrapRect.top;
+    const x2 = e.clientX - wrapRect.left, y2 = e.clientY - wrapRect.top;
+    const midY = (y1 + y2) / 2;
+    const temp = svg.querySelector("#mi-drag-temp");
+    if(temp) temp.setAttribute("d", `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`);
+    $$(".mi-box-stack.mi-drop-target", paragraphEl).forEach(s=>s.classList.remove("mi-drop-target"));
+    const under = document.elementFromPoint(e.clientX, e.clientY);
+    const stack = under && under.closest && under.closest(".mi-box-stack");
+    if(stack){
+      const w = stack.querySelector(".mi-box-wrap");
+      const c = w && JSON.parse(w.dataset.ctx);
+      if(c && c.pid===miDrag.pid && c.sidx!==miDrag.sidx) stack.classList.add("mi-drop-target");
+    }
+  }
+
+  function onMiDragUp(e){
+    document.removeEventListener("mousemove", onMiDragMove);
+    const drag = miDrag;
+    miDrag = null;
+    $$(".mi-box-stack.mi-drop-target", paragraphEl).forEach(s=>s.classList.remove("mi-drop-target"));
+    const svg = $("#para-connect-svg", paragraphEl);
+    const temp = svg && svg.querySelector("#mi-drag-temp");
+    if(temp) temp.remove();
+    if(!drag) return;
+
+    const under = document.elementFromPoint(e.clientX, e.clientY);
+    const targetStack = under && under.closest && under.closest(".mi-box-stack");
+    if(!targetStack) return;
+    const targetWrap = targetStack.querySelector(".mi-box-wrap");
+    if(!targetWrap) return;
+    const targetCtx = JSON.parse(targetWrap.dataset.ctx);
+    if(targetCtx.pid !== drag.pid || targetCtx.sidx === drag.sidx) return; // must land on a different sentence
+
+    const p = getParagraph(drag.pid);
+    if(!p) return;
+    const srcBoxId = ensureBoxId(p, drag.sidx, drag.idx);
+    const tgtBoxId = ensureBoxId(p, targetCtx.sidx, targetCtx.idx);
+    if(!srcBoxId || !tgtBoxId) return;
+
+    let a = { sidx: drag.sidx, boxId: srcBoxId }, b = { sidx: targetCtx.sidx, boxId: tgtBoxId };
+    if(a.sidx > b.sidx){ const t=a; a=b; b=t; }
+    const conns = (p.connections||[]).slice();
+    const i = conns.findIndex(c=>c.aSidx===a.sidx && c.aBoxId===a.boxId && c.bSidx===b.sidx && c.bBoxId===b.boxId);
+    if(i>=0) conns.splice(i,1);
+    else conns.push({ aSidx:a.sidx, aBoxId:a.boxId, bSidx:b.sidx, bBoxId:b.boxId });
+    updateParagraph(drag.pid, { sentences: p.sentences, connections: conns });
+    // updateParagraph() skips the full re-render while a Main Idea box input is still focused
+    // (userIsTypingInField), e.g. right after editing box text and then dragging a connect dot
+    // without blurring first — that left the committed line never drawn. Redraw the SVG directly
+    // here regardless, since drawing connections never needs to touch any text input's DOM.
+    requestAnimationFrame(()=>redrawParaConnections(p));
+  }
+
+  function paraBoxHandleSelector(boxId, side){
+    return `.mi-box-stack[data-box-id="${cssAttrEsc(boxId)}"] .mi-connect-${side}`;
+  }
+
+  function redrawParaConnections(p){
+    const wrap = $("#para-connect-wrap", paragraphEl);
+    const svg = $("#para-connect-svg", paragraphEl);
+    if(!wrap || !svg) return;
+    const w = wrap.scrollWidth, h = wrap.scrollHeight;
+    svg.setAttribute("width", w);
+    svg.setAttribute("height", h);
+    svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+    const wrapRect = wrap.getBoundingClientRect();
+    const paths = (p.connections||[]).map(c=>{
+      // a is always the earlier sentence (smaller sidx): anchor from its BOTTOM dot down to the
+      // later sentence's TOP dot, so the curve flows the same direction as the sketch (top-to-bottom).
+      const aEl = wrap.querySelector(paraBoxHandleSelector(c.aBoxId, "bottom"));
+      const bEl = wrap.querySelector(paraBoxHandleSelector(c.bBoxId, "top"));
+      if(!aEl || !bEl) return "";
+      const ar = aEl.getBoundingClientRect(), br = bEl.getBoundingClientRect();
+      const x1 = ar.left - wrapRect.left + ar.width/2, y1 = ar.top - wrapRect.top + ar.height/2;
+      const x2 = br.left - wrapRect.left + br.width/2, y2 = br.top - wrapRect.top + br.height/2;
+      const midY = (y1+y2)/2;
+      return `<path d="M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}" class="para-conn-line"/>`;
+    }).join("");
+    svg.innerHTML = paths;
+  }
+
+  function renderParaSentenceCard(p, sidx, number){
+    const s = p.sentences[sidx];
+    const tokens = tokenize(s.text);
+    const sel = new Set(s.selected||[]);
+    const splitAfter = new Set(s.selSplitAfter||[]);
+    const sel2 = new Set(s.selSecondary||[]);
+    const hideOriginal = !!state.paraRecap;
+    const hideSimplified = !!state.paraHideSimplified;
+
+    let headHtml;
+    if(hideOriginal){
+      headHtml = `<div class="para-sent-head"><div class="sent-num">${number}</div></div>`;
+    } else {
+      const tokHtml = buildTokHtml(tokens, sel, s.checked, i=>`data-pid="${esc(p.id)}" data-sidx="${sidx}" data-tidx="${i}"`, splitAfter, sel2);
+      const checkBtn = (!s.checked && sel.size>0)
+        ? `<button class="check-fab" data-pid="${esc(p.id)}" data-sidx="${sidx}" data-action="para-check" title="Simplify">&#10003;</button>`
+        : "";
+      const editBtn = s.checked ? editUndoBtnHtml(`data-pid="${esc(p.id)}" data-sidx="${sidx}" data-action="para-edit"`) : "";
+      headHtml = `<div class="para-sent-head">
+        <div class="sent-num">${number}</div>
+        <div class="row1-line">${tokHtml}${checkBtn}${editBtn}</div>
+      </div>`;
+    }
+
+    let simplifiedHtml = "", miHtml = "";
+    if(s.checked){
+      const runs = buildSelRuns(sel, splitAfter);
+      if(hideSimplified){
+        simplifiedHtml = "";
+      } else {
+        const chips = runs.map(run=>`<span class="sim-chip">${esc(stripChipPunct(run.map(i=>tokens[i]).join(" ")))}</span>`).join("");
+        simplifiedHtml = `<div class="simplified-line"><span class="simplified-label">Simplified</span>${chips || '<span class="muted">(chưa bôi phần nào)</span>'}</div>`;
+      }
+
+      // Bake stable ids (and colors) onto this row's Main Idea boxes right now, at render time,
+      // rather than lazily on first interaction: connectable rows need their DOM data-box-id to
+      // always match what gets written into p.connections, even across a render that gets skipped
+      // because an input is mid-edit (userIsTypingInField) — a later lazily-generated id would
+      // otherwise mismatch the id already painted into the still-live DOM from this render.
+      const boxes = bakeMiBoxIds(p, sidx);
+      const topLinked = new Set(), bottomLinked = new Set();
+      (p.connections||[]).forEach(c=>{
+        bottomLinked.add(c.aBoxId);
+        topLinked.add(c.bBoxId);
+      });
+      const miRowHtml = renderMiBoxRow({kind:"para", pid:p.id, sidx}, boxes, { connectable:true, topLinked, bottomLinked });
+      // When Simplified is hidden, the "Main idea" label no longer needs its own line above the
+      // boxes — put it inline, level with the boxes row, so this section takes less vertical space.
+      miHtml = hideSimplified
+        ? `<div class="mi-row-wrap mi-row-inline">
+            <div class="mi-label-inline">Main idea</div>
+            ${miRowHtml}
+          </div>`
+        : `<div class="mi-row-wrap">
+            <div class="mi-label">Main idea</div>
+            ${miRowHtml}
+          </div>`;
+    } else if(hideOriginal && !hideSimplified){
+      simplifiedHtml = `<div class="simplified-line"><span class="muted">(câu này chưa simplify)</span></div>`;
+    }
+
+    // Note panel: same toolbar/editable as the Câu đơn tab's per-sentence Note, just addressed by
+    // (paragraph id, sentence index) instead of a single-sentence id, and laid out beside the
+    // sentence rather than under it. Always shown (even before the sentence is Simplified), so the
+    // user can jot notes from the start -- hidden only when "Ẩn Simplified" is on, or in Linear Model
+    // (a separate render path entirely). "Ẩn câu gốc" on its own leaves the Note alone.
+    // Câu hỏi lẻ's "bài đọc" (p.isQa) deliberately has NO per-sentence Note -- keeps its rows compact;
+    // it gets a single item-level Note box instead, rendered once below the whole item (see
+    // renderParagraphDetail / renderQaNoteSection).
+    let noteHtml = "";
+    if(!hideSimplified && !p.isQa){
+      noteHtml = `<div class="para-sent-note">
+        <div class="note-wrap">
+          <div class="mi-label">Note</div>
+          <div class="note-toolbar" data-pid="${esc(p.id)}" data-sidx="${sidx}">
+            <button type="button" data-cmd="bold" title="Đậm"><b>B</b></button>
+            <button type="button" data-cmd="italic" title="Nghiêng"><i>I</i></button>
+            <button type="button" data-cmd="underline" title="Gạch chân"><u>U</u></button>
+            <span class="note-toolbar-break"></span>
+            <button type="button" data-cmd="highlight" data-hl="pink" title="Highlight hồng"><span class="hl-swatch hl-pink"></span></button>
+            <button type="button" data-cmd="highlight" data-hl="yellow" title="Highlight vàng"><span class="hl-swatch hl-yellow"></span></button>
+            <button type="button" data-cmd="highlight" data-hl="blue" title="Highlight xanh dương"><span class="hl-swatch hl-blue"></span></button>
+            <button type="button" data-cmd="highlight" data-hl="green" title="Highlight xanh lá"><span class="hl-swatch hl-green"></span></button>
+            <span class="note-toolbar-sep"></span>
+            <button type="button" data-cmd="clearhl" title="Bỏ highlight">&#8416;</button>
+          </div>
+          <div class="note-editable" contenteditable="true" data-pid="${esc(p.id)}" data-sidx="${sidx}" data-placeholder="Ghi chú thêm cho câu này...">${sanitizeNoteHtml(s.noteHtml||'')}</div>
+        </div>
+      </div>`;
+    }
+
+    return `<div class="para-sent-row">
+      <div class="para-sent-main">
+        ${headHtml}
+        ${simplifiedHtml}
+        ${miHtml}
+      </div>
+      ${noteHtml}
+    </div>`;
+  }
+
+  function renderParagraphDetail(p){
+    const lm = !!state.paraLinearModel;
+    let html = `<div class="para-back" id="para-back">&larr; Quay lại danh sách ${p.isQa ? 'câu hỏi lẻ' : 'đoạn'}</div>`;
+    html += `<div class="row" style="justify-content:space-between; align-items:flex-start; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+      <p class="muted" style="margin:0; max-width:480px;">
+        Với từng câu: <b>bôi chọn</b> phần cốt lõi, bấm <b>&#10003;</b> để simplify, rồi điền <b>Main Idea</b>.
+        ${p.isQa ? 'Riêng phần <b>Bài đọc</b> mới có chấm nối repeated info; phần <b>Câu hỏi</b> chỉ đọc cấu trúc.' : 'Mỗi ô <b>Main Idea</b> có 1 chấm tròn ở trên và dưới (hiện khi hover) — kéo từ 1 chấm thả vào ô Main Idea của câu khác để nối <b>repeated info</b>; kéo lại lần nữa vào đúng cặp đó để huỷ nối.'}
+      </p>
+      <div class="row" style="gap:8px; flex-wrap:wrap;">
+        ${lm ? "" : `<button class="eye-btn ${state.paraRecap?'active':''}" id="para-recap-toggle">${eyeIcon(!state.paraRecap)} ${state.paraRecap?'Đang ẩn câu gốc':'Ẩn câu gốc'}</button>`}
+        ${lm ? "" : `<button class="eye-btn ${state.paraHideSimplified?'active':''}" id="para-hide-simplified-toggle">${eyeIcon(!state.paraHideSimplified)} ${state.paraHideSimplified?'Đang ẩn Simplified':'Ẩn Simplified'}</button>`}
+        <button class="eye-btn ${lm?'active':''}" id="para-linear-model-toggle">${lm?'Thoát Linear Model':'Linear Model'}</button>
+        ${state.downloads ? `<button class="ghost" id="para-export-btn">Xuất file HTML</button>` : ``}
+      </div>
+    </div>`;
+
+    if(lm){
+      html += p.isQa ? renderQaLinearModel(p) : renderParaLinearModel(p);
+      return html;
+    }
+
+    // Câu hỏi lẻ + "Ẩn Simplified": sentences (either half) with no Main Idea text typed in yet
+    // just clutter the comparison, so they disappear entirely while this is on -- leaving only the
+    // sentences that DO carry a Main Idea, plus the final "Main Idea (cả đoạn)" row, which always stays.
+    // Normal "Thêm đoạn văn" paragraphs are untouched: there, "Ẩn Simplified" only hides the Simplified
+    // line (see renderParaSentenceCard), never a whole sentence row.
+    const hideSimplified = !!state.paraHideSimplified;
+    const passageIdxs = (p.sentences||[]).map((s,i)=>i)
+      .filter(i => !(p.isQa && hideSimplified) || sentenceHasMiText(p.sentences[i]));
+
+    if(p.isQa) html += `<div class="qa-section-label">Bài đọc</div>`;
+    html += `<div id="para-connect-wrap" style="position:relative;">`;
+    html += `<svg id="para-connect-svg" class="para-connect-svg"></svg>`;
+    passageIdxs.forEach(i=>{
+      html += renderParaSentenceCard(p, i, i+1);
+    });
+
+    const finalRowHtml = renderMiBoxRow({kind:"final", pid:p.id}, p.finalMainIdea);
+    html += `<div class="para-final-wrap">
+      <div class="para-final-label">Main Idea (cả đoạn)</div>
+      ${finalRowHtml}
+    </div>`;
+    html += `</div>`;
+
+    if(p.isQa){
+      const questionIdxs = (p.questionSentences||[]).map((s,i)=>i)
+        .filter(i => !hideSimplified || sentenceHasMiText(p.questionSentences[i]));
+      html += `<div class="qa-question-section">
+        <div class="qa-section-label">Câu hỏi</div>
+        ${questionIdxs.map(i=>renderQaQuestionCard(p, i, i+1)).join("")}
+      </div>`;
+      html += renderQaNoteSection(p);
+    }
+    return html;
+  }
+
+  function sentenceHasMiText(s){
+    return normMiBoxes(s && s.mainIdeaBoxes).some(b=>(b.text||"").trim().length>0);
+  }
+
+  // Câu hỏi lẻ's Linear Model: instead of the normal column-aligned grid of every passage sentence's
+  // Main Idea (which has no "repeated info" concept to line up here), show just the two things worth
+  // comparing side by side -- the passage's overall Main Idea and the question's own Main Idea.
+  function renderQaLinearModel(p){
+    const finalBoxes = normMiBoxes(p.finalMainIdea).filter(b=>(b.text||"").trim());
+    const finalHtml = finalBoxes.length
+      ? finalBoxes.map(b=>`<span class="lm-pill ${esc(b.color)}">${esc(b.text)}</span>`).join("")
+      : `<span class="muted">(chưa điền)</span>`;
+    const qBoxes = [];
+    (p.questionSentences||[]).forEach(s=>{
+      normMiBoxes(s.mainIdeaBoxes).forEach(b=>{ if((b.text||"").trim()) qBoxes.push(b); });
+    });
+    const qHtml = qBoxes.length
+      ? qBoxes.map(b=>`<span class="lm-pill ${esc(b.color)}">${esc(b.text)}</span>`).join("")
+      : `<span class="muted">(chưa điền)</span>`;
+    return `<div class="qa-lm-wrap">
+      <div class="qa-lm-row">
+        <div class="qa-lm-label">Main Idea (cả bài đọc)</div>
+        <div class="qa-lm-boxes">${finalHtml}</div>
+      </div>
+      <div class="qa-lm-row">
+        <div class="qa-lm-label">Main Idea (câu hỏi)</div>
+        <div class="qa-lm-boxes">${qHtml}</div>
+      </div>
+    </div>`;
+  }
+
+  // Câu hỏi lẻ's Note: ONE box per item (not per sentence), sitting full-width right below the whole
+  // item -- straddling both the "Bài đọc" and "Câu hỏi" sections above it rather than living beside
+  // either one. Same toolbar/editable/sanitize machinery as the per-sentence Note elsewhere, just
+  // addressed by paragraph id alone (no sidx) via p.qaNoteHtml.
+  function renderQaNoteSection(p){
+    return `<div class="qa-note-section">
+      <div class="mi-label">Note</div>
+      <div class="note-toolbar qa-note-toolbar" data-pid="${esc(p.id)}">
+        <button type="button" data-cmd="bold" title="Đậm"><b>B</b></button>
+        <button type="button" data-cmd="italic" title="Nghiêng"><i>I</i></button>
+        <button type="button" data-cmd="underline" title="Gạch chân"><u>U</u></button>
+        <span class="note-toolbar-break"></span>
+        <button type="button" data-cmd="highlight" data-hl="pink" title="Highlight hồng"><span class="hl-swatch hl-pink"></span></button>
+        <button type="button" data-cmd="highlight" data-hl="yellow" title="Highlight vàng"><span class="hl-swatch hl-yellow"></span></button>
+        <button type="button" data-cmd="highlight" data-hl="blue" title="Highlight xanh dương"><span class="hl-swatch hl-blue"></span></button>
+        <button type="button" data-cmd="highlight" data-hl="green" title="Highlight xanh lá"><span class="hl-swatch hl-green"></span></button>
+        <span class="note-toolbar-sep"></span>
+        <button type="button" data-cmd="clearhl" title="Bỏ highlight">&#8416;</button>
+      </div>
+      <div class="note-editable qa-note-editable" contenteditable="true" data-pid="${esc(p.id)}" data-placeholder="Ghi chú thêm cho câu hỏi này...">${sanitizeNoteHtml(p.qaNoteHtml||'')}</div>
+    </div>`;
+  }
+
+  // Câu hỏi lẻ's "Câu hỏi" half: structure-only (simplify + Main Idea box per sentence), no
+  // cross-sentence connections and no Note panel -- modeled on renderParaSentenceCard's head/Simplified/
+  // Main-idea markup, addressed via ctx.kind:"qaQuestion" (see getBoxesArr/setBoxesArr) instead of "para".
+  // data-qside="q" on every token/button is the one thing that tells these apart from the passage's own
+  // tokens when both carry the same data-pid/data-sidx (see altDragScopeFor and the wiring below).
+  function renderQaQuestionCard(p, sidx, number){
+    const s = (p.questionSentences||[])[sidx] || {};
+    const tokens = tokenize(s.text||"");
+    const sel = new Set(s.selected||[]);
+    const splitAfter = new Set(s.selSplitAfter||[]);
+    const sel2 = new Set(s.selSecondary||[]);
+    const tokHtml = buildTokHtml(tokens, sel, s.checked, i=>`data-pid="${esc(p.id)}" data-sidx="${sidx}" data-tidx="${i}" data-qside="q"`, splitAfter, sel2);
+    const checkBtn = (!s.checked && sel.size>0)
+      ? `<button class="check-fab" data-pid="${esc(p.id)}" data-sidx="${sidx}" data-qside="q" data-action="qa-q-check" title="Simplify">&#10003;</button>`
+      : "";
+    const editBtn = s.checked ? editUndoBtnHtml(`data-pid="${esc(p.id)}" data-sidx="${sidx}" data-qside="q" data-action="qa-q-edit"`) : "";
+    let miHtml = "";
+    if(s.checked){
+      const runs = buildSelRuns(sel, splitAfter);
+      const chips = runs.map(run=>`<span class="sim-chip">${esc(stripChipPunct(run.map(i=>tokens[i]).join(" ")))}</span>`).join("");
+      const simplifiedHtml = `<div class="simplified-line"><span class="simplified-label">Simplified</span>${chips || '<span class="muted">(chưa bôi phần nào)</span>'}</div>`;
+      const boxes = normMiBoxes(s.mainIdeaBoxes);
+      const miRowHtml = renderMiBoxRow({kind:"qaQuestion", pid:p.id, sidx}, boxes);
+      miHtml = simplifiedHtml + `<div class="mi-row-wrap"><div class="mi-label">Main idea</div>${miRowHtml}</div>`;
+    }
+    return `<div class="qa-q-row">
+      <div class="para-sent-head">
+        <div class="sent-num">${number}</div>
+        <div class="row1-line">${tokHtml}${checkBtn}${editBtn}</div>
+      </div>
+      ${miHtml}
+    </div>`;
+  }
+
+  // ---------- Linear Model: compact column-aligned grid of Main Idea boxes ----------
+  // Column = Main Idea box position (same thing as its color, since color is assigned by position):
+  // Column = which REPEATED-INFO GROUP a box belongs to (via p.connections), not its position in the
+  // sentence: two boxes the user linked with a dashed connection -- however far apart their original
+  // positions were -- are pulled into the exact same vertical column, so the repeated idea reads as one
+  // straight line down the page. A box with no connection at all just gets its own column. Column order
+  // follows first appearance, reading top-to-bottom / left-to-right through the sentences.
+  function renderParaLinearModel(p){
+    const rows = [];
+    (p.sentences||[]).forEach((s,sidx)=>{
+      if(!s.checked) return;
+      const boxes = bakeMiBoxIds(p, sidx).filter(b=>(b.text||"").trim());
+      if(boxes.length) rows.push({ number: sidx+1, boxes });
+    });
+
+    if(rows.length===0){
+      return `<div class="empty-state">Chưa có câu nào được simplify + điền Main Idea để xếp vào Linear Model.</div>`;
+    }
+
+    // union-find over box ids, merged by p.connections
+    const parent = {};
+    function find(x){
+      parent[x] = (parent[x]===undefined) ? x : parent[x];
+      while(parent[x] !== x){ parent[x] = parent[parent[x]]; x = parent[x]; }
+      return x;
+    }
+    function union(a,b){ const ra=find(a), rb=find(b); if(ra!==rb) parent[ra]=rb; }
+    rows.forEach(r=>r.boxes.forEach(b=>{ find(b.id); }));
+    (p.connections||[]).forEach(c=>{
+      if(parent[c.aBoxId]===undefined) parent[c.aBoxId]=c.aBoxId;
+      if(parent[c.bBoxId]===undefined) parent[c.bBoxId]=c.bBoxId;
+      union(c.aBoxId, c.bBoxId);
+    });
+
+    // assign each group a column, in order of first appearance
+    const colOfRoot = new Map();
+    rows.forEach(r=>r.boxes.forEach(b=>{
+      const root = find(b.id);
+      if(!colOfRoot.has(root)) colOfRoot.set(root, colOfRoot.size);
+    }));
+    const colCount = Math.max(1, colOfRoot.size);
+
+    const rowsHtml = rows.map(row=>{
+      const cellsByCol = new Array(colCount).fill(null);
+      row.boxes.forEach(b=>{
+        const col = colOfRoot.get(find(b.id));
+        if(cellsByCol[col]===null) cellsByCol[col] = b;
+      });
+      let cellsHtml = `<div class="lm-num">${row.number}</div>`;
+      for(let col=0; col<colCount; col++){
+        const b = cellsByCol[col];
+        cellsHtml += b
+          ? `<div class="lm-cell"><span class="lm-pill ${esc(b.color)}" data-box-id="${esc(b.id)}">${esc(b.text)}</span></div>`
+          : `<div class="lm-cell"></div>`;
+      }
+      return cellsHtml;
+    }).join("");
+
+    const finalRowHtml = renderMiBoxRow({kind:"final", pid:p.id}, p.finalMainIdea);
+
+    return `<div class="lm-wrap" id="para-linear-wrap" style="position:relative;">
+      <svg id="para-linear-svg" class="para-connect-svg lm-connect-svg"></svg>
+      <div class="lm-grid" style="grid-template-columns: 26px repeat(${colCount}, minmax(70px, max-content));">
+        ${rowsHtml}
+      </div>
+      <div class="para-final-wrap lm-final-wrap">
+        <div class="para-final-label">Main Idea (cả đoạn)</div>
+        ${finalRowHtml}
+      </div>
+    </div>`;
+  }
+
+  // Linear Model: the "Main Idea (cả đoạn)" row lives in its own flex container below the grid (so it
+  // keeps its own "+"/remove UI), but box i is meant to read as belonging to idea-color column i above
+  // it. .lm-grid and that row size their own columns independently (each one's minmax(70px,max-content)
+  // track fits only ITS OWN content), so the two can end up with different column widths and drift out
+  // of alignment -- there's no reliable way to force two separate CSS Grids to agree on track widths
+  // from markup alone. Instead, once both are on screen, this measures each grid column's actual
+  // rendered left edge (from the always-present, possibly-empty .lm-cell for that column) and
+  // absolutely positions each final box so it's centered under its column, then -- since columns can
+  // sit closer together than a box is wide -- nudges any boxes that would overlap apart (left one
+  // further left, right one further right) around their shared midpoint, so there's always a gap.
+  // Also draws one straight, centered, dashed line per column (the normal drag-to-connect curved lines
+  // in redrawParaConnections are untouched) running from the top of the grid down through every pill in
+  // that column -- intentionally over the boxes/text -- to the matching aligned final box, ending in a
+  // downward arrowhead pointing into it.
+  function redrawLinearModelConnections(p){
+    const wrap = $("#para-linear-wrap", paragraphEl);
+    const svg = $("#para-linear-svg", paragraphEl);
+    const grid = $(".lm-grid", paragraphEl);
+    const finalBoxesWrap = $(".lm-final-wrap .mi-boxes", paragraphEl);
+    if(!wrap || !svg || !grid || !finalBoxesWrap) return;
+
+    const numRows = $$(".lm-num", paragraphEl).length;
+    const cells = $$(".lm-cell", paragraphEl);
+    const colCount = numRows ? Math.round(cells.length / numRows) : 0;
+    const finalBoxes = $$(".mi-box-wrap", finalBoxesWrap);
+    const LM_FINAL_BOX_GAP = 10; // minimum breathing room enforced between two adjacent final boxes
+    const LM_FINAL_BOX_MIN_W = 56; // never shrink a box below this, even for very short text
+    const LM_FINAL_BOX_PAD = 24; // matches .mi-box's left+right padding (12px each side)
+
+    // Size one final box: always a single line (never wrapped onto a second line), at the SAME
+    // font-size as the regular (per-sentence) Main Idea boxes above -- the box's width simply grows
+    // to fully contain whatever the text needs, rather than shrinking the font to fit a cap.
+    function sizeFinalBox(input){
+      const span = ensureMeasureSpan();
+      const cs = getComputedStyle(input);
+      span.style.fontFamily = cs.fontFamily;
+      span.style.fontWeight = cs.fontWeight;
+      span.style.fontSize = cs.fontSize;
+      span.textContent = input.value || input.getAttribute("placeholder") || "";
+      const textW = Math.ceil(span.getBoundingClientRect().width);
+      return Math.max(LM_FINAL_BOX_MIN_W, textW + LM_FINAL_BOX_PAD);
+    }
+
+    // Align: center each final box (up to colCount of them) under column i, using row 0's cell for
+    // that column as the measurement anchor (always present, even when empty, since every row renders
+    // a placeholder .lm-cell per column). Columns can sit closer together than a box is wide, so a
+    // second pass below nudges any boxes that would still overlap apart from their shared midpoint,
+    // using each box's own (possibly different) width rather than one fixed width for all of them.
+    const finalWrapRect = finalBoxesWrap.getBoundingClientRect();
+    const centers = [];
+    const widths = [];
+    finalBoxes.forEach((box, i)=>{
+      if(i >= colCount || !cells[i]){ centers.push(null); widths.push(null); return; }
+      const cr = cells[i].getBoundingClientRect();
+      centers.push(cr.left - finalWrapRect.left + cr.width/2);
+      const input = box.querySelector(".mi-box");
+      widths.push(input ? sizeFinalBox(input) : LM_FINAL_BOX_MIN_W);
+    });
+    const activeIdx = centers.map((c,i)=>c===null ? -1 : i).filter(i=>i!==-1);
+    for(let pass=0; pass<6; pass++){
+      for(let k=0; k<activeIdx.length-1; k++){
+        const i = activeIdx[k], j = activeIdx[k+1];
+        const minDist = (widths[i] + widths[j]) / 2 + LM_FINAL_BOX_GAP;
+        const dist = centers[j] - centers[i];
+        if(dist < minDist){
+          const shift = (minDist - dist) / 2;
+          centers[i] -= shift; centers[j] += shift;
+        }
+      }
+    }
+    let maxBoxH = 0;
+    finalBoxes.forEach((box, i)=>{
+      if(!activeIdx.includes(i)){ box.style.position = ""; box.style.left = ""; box.style.top = ""; return; }
+      const input = box.querySelector(".mi-box");
+      if(input){ input.style.width = widths[i] + "px"; }
+      box.style.position = "absolute";
+      box.style.left = (centers[i] - widths[i]/2) + "px";
+      box.style.top = "0px";
+      maxBoxH = Math.max(maxBoxH, box.offsetHeight);
+    });
+    finalBoxesWrap.style.position = "relative";
+    finalBoxesWrap.style.minHeight = maxBoxH ? maxBoxH + "px" : "";
+    // The "+" button is the one child left in normal flow once the boxes go absolute -- place it right
+    // after the last aligned box instead of letting it collapse to the container's top-left corner.
+    const addBtn = $(".mi-add", finalBoxesWrap);
+    const lastAlignedBox = finalBoxes[Math.min(finalBoxes.length, colCount) - 1];
+    if(addBtn && lastAlignedBox){
+      const lr = lastAlignedBox.getBoundingClientRect();
+      addBtn.style.position = "absolute";
+      addBtn.style.left = (lr.left - finalWrapRect.left + lr.width + 10) + "px";
+      addBtn.style.top = "0px";
+    } else if(addBtn){
+      addBtn.style.position = "";
+      addBtn.style.left = "";
+      addBtn.style.top = "";
+    }
+
+    // Draw: one dashed vertical line per column, from the top of the grid down to its aligned final
+    // box, ending in an arrowhead pointing into that box.
+    const w = wrap.scrollWidth, h = wrap.scrollHeight;
+    svg.setAttribute("width", w);
+    svg.setAttribute("height", h);
+    svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+    const wrapRect = wrap.getBoundingClientRect();
+    const gridRect = grid.getBoundingClientRect();
+    const defs = `<defs><marker id="lmArrow" markerWidth="8" markerHeight="8" refX="3.5" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="var(--accent)"/></marker></defs>`;
+    const lines = [];
+    for(let col=0; col<colCount; col++){
+      const finalEl = finalBoxes[col];
+      if(!finalEl) continue; // no matching final box for this column -- nothing to point to, skip the line
+      const fr = finalEl.getBoundingClientRect();
+      const x = fr.left - wrapRect.left + fr.width/2;
+      const y1 = gridRect.top - wrapRect.top;
+      const y2 = fr.top - wrapRect.top - 2;
+      lines.push(`<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" class="lm-col-line" marker-end="url(#lmArrow)"/>`);
+    }
+    svg.innerHTML = defs + lines.join("");
+  }
+
+  // The "Database" screen's item cards: the paragraph/qa add-form plus the full list of items for
+  // the current tab (state.paraMode), each with a checkbox for multi-select. This is the OLD
+  // renderParagraphList()/renderQaList() body (unchanged markup/behaviour for open/delete), with
+  // checkboxes and a "Tạo phiên làm việc" button added. `scopeIds`, when given, filters which items
+  // are shown (used by the session work screen below instead of the Database screen).
+  function renderParagraphList(){
+    if(state.paraMode === "qa") return renderQaList();
+    let html = `<p class="intro">Dán một <b>đoạn văn</b> (nhiều câu), app sẽ tách thành từng câu để bạn đọc cấu trúc, rồi nối Read Connections giữa các câu.</p>`;
+    const paraImgPreview = state.paraBulkFiles.map(f=>`<img class="bulk-thumb" src="${URL.createObjectURL(f)}" alt="${esc(f.name)}">`).join("");
+    html += `<div class="card stack" style="margin-bottom:16px;">
+      <label class="field">Dán đoạn văn (tiếng Anh)
+        <textarea id="para-new-text" rows="7" placeholder="Dán nguyên đoạn văn vào đây...">${esc(state.paraDraftText||"")}</textarea>
+      </label>
+      <label class="field">Hoặc tải ảnh cả đoạn lên ${state.sample? '— mình sẽ đọc chữ trong ảnh và điền vào ô trên' : '(cần quyền dùng Claude ở đây)'}
+        <input type="file" id="para-bulk-images" accept="image/png,image/jpeg,image/webp,image/gif" multiple ${state.sample? '' : 'disabled'}>
+      </label>
+      ${paraImgPreview ? `<div class="bulk-preview">${paraImgPreview}</div>` : ``}
+      <div class="row" style="flex-wrap:wrap; gap:8px;">
+        <button class="primary" id="para-new-submit">Tách câu &amp; bắt đầu</button>
+        ${state.sample && state.paraBulkFiles.length ? `<button class="ghost" id="para-ocr-btn">Đọc chữ từ ảnh &amp; điền vào ô trên</button>` : ``}
+      </div>
+      <div id="para-ocr-status" class="status-line" hidden></div>
+    </div>`;
+
+    html += `<div class="stack" id="para-list">`;
+    const normalParagraphs = state.paragraphs.filter(p=>!p.isQa);
+    if(normalParagraphs.length===0){
+      html += `<div class="empty-state">Chưa có đoạn văn nào.</div>`;
+    } else {
+      const chronological = normalParagraphs.slice().sort((a,b)=>(b.order||0)-(a.order||0));
+      chronological.forEach(p=>{
+        const n = (p.sentences||[]).length;
+        html += `<div class="para-item" data-id="${esc(p.id)}">
+          <div class="prev">${esc((p.text||"").slice(0,220))}</div>
+          <div class="row" style="gap:10px;">
+            <div class="count">${n} câu</div>
+            <button class="del-btn" data-action="para-delete" data-id="${esc(p.id)}" title="Xóa đoạn">&times;</button>
+          </div>
+        </div>`;
+      });
+    }
+    html += `</div>`;
+    return html;
+  }
+
+  // "Câu hỏi lẻ" list + add-form -- shares #para-list / .para-item / data-action="para-delete" markup
+  // with the normal paragraph list above, so the existing open/delete wiring in wireParagraphView()
+  // just works unchanged for these too; only the add-form (two textareas instead of one) differs.
+  function renderQaList(){
+    let html = `<p class="intro">Nhập <b>thông tin trong bài đọc</b> (một câu hoặc cả đoạn văn -- nếu là đoạn, app sẽ tách thành từng câu) và <b>câu hỏi</b> tương ứng. Bài đọc đọc được cả cấu trúc và Read Connections; câu hỏi chỉ đọc cấu trúc.</p>`;
+    html += `<div class="card stack" style="margin-bottom:16px;">
+      <label class="field">Thông tin trong bài đọc (câu đơn hoặc đoạn văn, tiếng Anh)
+        <textarea id="qa-new-passage" rows="6" placeholder="Dán câu hoặc đoạn văn vào đây...">${esc(state.qaDraftPassageText||"")}</textarea>
+      </label>
+      <label class="field">Câu hỏi
+        <textarea id="qa-new-question" rows="2" placeholder="Nhập câu hỏi vào đây...">${esc(state.qaDraftQuestionText||"")}</textarea>
+      </label>
+      <div class="row" style="flex-wrap:wrap; gap:8px;">
+        <button class="primary" id="qa-new-submit">Tách câu &amp; bắt đầu</button>
+      </div>
+    </div>`;
+
+    html += `<div class="stack" id="para-list">`;
+    const qaItems = state.paragraphs.filter(p=>p.isQa);
+    if(qaItems.length===0){
+      html += `<div class="empty-state">Chưa có câu hỏi lẻ nào.</div>`;
+    } else {
+      qaItems.slice().sort((a,b)=>(b.order||0)-(a.order||0)).forEach(p=>{
+        const qPreview = (p.questionSentences && p.questionSentences.map(s=>s.text).join(" ")) || "";
+        html += `<div class="para-item" data-id="${esc(p.id)}">
+          <div class="prev">${esc((p.text||"").slice(0,180))}</div>
+          <div class="prev" style="opacity:.7; margin-top:4px;">${esc(qPreview.slice(0,180))}</div>
+          <div class="row" style="gap:10px;">
+            <div class="count">${(p.sentences||[]).length} câu bài đọc</div>
+            <button class="del-btn" data-action="para-delete" data-id="${esc(p.id)}" title="Xóa">&times;</button>
+          </div>
+        </div>`;
+      });
+    }
+    html += `</div>`;
+    return html;
+  }
+
+  function renderParagraphView(){
+    const savedFocus = captureFocus();
+    const p = state.currentParagraphId ? getParagraph(state.currentParagraphId) : null;
+    let html, drewDetail = false;
+    if(p){
+      // renderParagraphDetail can throw on a paragraph whose stored data doesn't match what the
+      // current code expects (e.g. an older/partial shape). Letting that exception escape here would
+      // leave paragraphEl showing its previous (stale) HTML while state.currentParagraphId stays
+      // pointed at this same broken paragraph — so every later render attempt (including opening or
+      // deleting a *different*, perfectly fine paragraph) hits this same throw again, which looks
+      // exactly like "nothing happens when I click open or delete". Fall back to a recoverable error
+      // view instead, so the paragraph can always at least be backed out of or deleted.
+      try{
+        html = renderParagraphDetail(p);
+        drewDetail = true;
+      }catch(e){
+        console.error("renderParagraphDetail failed for paragraph", p.id, e);
+        html = renderParagraphError(p, e);
+      }
+    } else {
+      html = renderParagraphList();
+    }
+    if(!p) state.currentParagraphId = null;
+    paragraphEl.innerHTML = html;
+    wireParagraphView();
+    restoreFocus(savedFocus);
+    if(p && drewDetail){
+      requestAnimationFrame(()=> state.paraLinearModel ? redrawLinearModelConnections(p) : redrawParaConnections(p));
+    }
+  }
+
+  function renderParagraphError(p, err){
+    return `<div class="para-back" id="para-back">&larr; Quay lại danh sách đoạn</div>
+      <div class="empty-state" style="text-align:left;">
+        Đoạn này đang bị lỗi dữ liệu nên không hiển thị được (${esc(err && err.message || String(err))}).
+        Bạn có thể xóa đoạn này rồi dán lại đoạn văn để làm lại.
+        <div class="row" style="margin-top:12px;">
+          <button class="ghost" data-action="para-delete" data-id="${esc(p.id)}">Xóa đoạn này</button>
+        </div>
+      </div>`;
+  }
+
+  function wireParagraphView(){
+    const submitBtn = $("#para-new-submit", paragraphEl);
+    if(submitBtn){
+      submitBtn.onclick = ()=>{
+        const ta = $("#para-new-text", paragraphEl);
+        addParagraph(ta ? ta.value : "");
+      };
+    }
+    const paraDraftTa = $("#para-new-text", paragraphEl);
+    if(paraDraftTa){
+      paraDraftTa.oninput = ()=>{ state.paraDraftText = paraDraftTa.value; };
+    }
+    const paraImagesInput = $("#para-bulk-images", paragraphEl);
+    if(paraImagesInput){
+      paraImagesInput.onchange = ()=>{
+        // snapshot the textarea's current (unsaved) draft before this re-render wipes the DOM, so
+        // picking an image doesn't silently discard text the user already pasted/typed
+        state.paraDraftText = paraDraftTa ? paraDraftTa.value : state.paraDraftText;
+        state.paraBulkFiles = Array.from(paraImagesInput.files || []);
+        renderParagraphView();
+      };
+    }
+    const paraOcrBtn = $("#para-ocr-btn", paragraphEl);
+    if(paraOcrBtn) paraOcrBtn.onclick = handleParaOcr;
+    $$(".para-item", paragraphEl).forEach(el=>{
+      el.onclick = (e)=>{
+        if(e.target.closest("[data-action='para-delete']")) return;
+        openParagraph(el.dataset.id);
+      };
+    });
+    $$("[data-action='para-delete']", paragraphEl).forEach(el=>{
+      el.onclick = (e)=>{ e.stopPropagation(); deleteParagraph(el.dataset.id); };
+    });
+
+    const backBtn = $("#para-back", paragraphEl);
+    if(backBtn) backBtn.onclick = ()=>{ state.currentParagraphId = null; renderParagraphView(); };
+    const recapToggle = $("#para-recap-toggle", paragraphEl);
+    if(recapToggle) recapToggle.onclick = ()=>{
+      state.paraRecap = !state.paraRecap;
+      updateParagraph(state.currentParagraphId, { uiRecap: state.paraRecap });
+    };
+    const hideSimplifiedToggle = $("#para-hide-simplified-toggle", paragraphEl);
+    if(hideSimplifiedToggle) hideSimplifiedToggle.onclick = ()=>{
+      state.paraHideSimplified = !state.paraHideSimplified;
+      updateParagraph(state.currentParagraphId, { uiHideSimplified: state.paraHideSimplified });
+    };
+    const linearModelToggle = $("#para-linear-model-toggle", paragraphEl);
+    if(linearModelToggle) linearModelToggle.onclick = ()=>{
+      state.paraLinearModel = !state.paraLinearModel;
+      updateParagraph(state.currentParagraphId, { uiLinearModel: state.paraLinearModel });
+    };
+    const paraExportBtn = $("#para-export-btn", paragraphEl);
+    if(paraExportBtn) paraExportBtn.onclick = ()=> handleExportParagraphHtml(state.currentParagraphId);
+
+    $$(".para-sent-row .tok:not(.locked)", paragraphEl).forEach(el=>{
+      el.onclick = (e)=>{
+        if(e.altKey) return; // fully handled by the Option-drag mousedown/mouseup flow below
+        const pid = el.dataset.pid, sidx = parseInt(el.dataset.sidx,10), tidx = parseInt(el.dataset.tidx,10);
+        if(e.metaKey || e.ctrlKey){ toggleParaTokSplit(pid, sidx, tidx); }
+        else { toggleParaTok(pid, sidx, tidx); }
+      };
+      el.onmousedown = (e)=>{
+        if(e.altKey){ e.preventDefault(); startAltDrag(el); }
+      };
+    });
+    $$(".para-sent-row .sel-run, .para-sent-row .sel2-run", paragraphEl).forEach(run=>{
+      run.onclick = (e)=>{
+        if(e.altKey) return;
+        if(e.target.closest(".tok")) return; // already handled by that word's own click handler
+        const best = nearestTokInRun(run, e.clientX);
+        if(!best || best.classList.contains("locked")) return;
+        const pid = best.dataset.pid, sidx = parseInt(best.dataset.sidx,10), tidx = parseInt(best.dataset.tidx,10);
+        if(e.metaKey || e.ctrlKey){ toggleParaTokSplit(pid, sidx, tidx); }
+        else { toggleParaTok(pid, sidx, tidx); }
+      };
+      run.onmousedown = (e)=>{
+        if(!e.altKey || e.target.closest(".tok")) return;
+        const best = nearestTokInRun(run, e.clientX);
+        if(!best || best.classList.contains("locked")) return;
+        e.preventDefault();
+        startAltDrag(best);
+      };
+    });
+    $$("[data-action='para-check']", paragraphEl).forEach(el=>{
+      el.onclick = ()=> updateParaSentence(el.dataset.pid, parseInt(el.dataset.sidx,10), {checked:true});
+    });
+    $$("[data-action='para-edit']", paragraphEl).forEach(el=>{
+      el.onclick = ()=> updateParaSentence(el.dataset.pid, parseInt(el.dataset.sidx,10), {checked:false});
+    });
+
+    // ---------- Câu hỏi lẻ: add-form + question half (structure-only, no connections) ----------
+    const qaSubmitBtn = $("#qa-new-submit", paragraphEl);
+    if(qaSubmitBtn){
+      qaSubmitBtn.onclick = ()=>{
+        const passTa = $("#qa-new-passage", paragraphEl);
+        const qTa = $("#qa-new-question", paragraphEl);
+        addQaParagraph(passTa ? passTa.value : "", qTa ? qTa.value : "");
+      };
+    }
+    const qaPassageTa = $("#qa-new-passage", paragraphEl);
+    if(qaPassageTa) qaPassageTa.oninput = ()=>{ state.qaDraftPassageText = qaPassageTa.value; };
+    const qaQuestionTa = $("#qa-new-question", paragraphEl);
+    if(qaQuestionTa) qaQuestionTa.oninput = ()=>{ state.qaDraftQuestionText = qaQuestionTa.value; };
+
+    $$(".qa-q-row .tok:not(.locked)", paragraphEl).forEach(el=>{
+      el.onclick = (e)=>{
+        if(e.altKey) return;
+        const pid = el.dataset.pid, sidx = parseInt(el.dataset.sidx,10), tidx = parseInt(el.dataset.tidx,10);
+        if(e.metaKey || e.ctrlKey){ toggleQaQuestionTokSplit(pid, sidx, tidx); }
+        else { toggleQaQuestionTok(pid, sidx, tidx); }
+      };
+      el.onmousedown = (e)=>{
+        if(e.altKey){ e.preventDefault(); startAltDrag(el); }
+      };
+    });
+    $$(".qa-q-row .sel-run, .qa-q-row .sel2-run", paragraphEl).forEach(run=>{
+      run.onclick = (e)=>{
+        if(e.altKey) return;
+        if(e.target.closest(".tok")) return;
+        const best = nearestTokInRun(run, e.clientX);
+        if(!best || best.classList.contains("locked")) return;
+        const pid = best.dataset.pid, sidx = parseInt(best.dataset.sidx,10), tidx = parseInt(best.dataset.tidx,10);
+        if(e.metaKey || e.ctrlKey){ toggleQaQuestionTokSplit(pid, sidx, tidx); }
+        else { toggleQaQuestionTok(pid, sidx, tidx); }
+      };
+      run.onmousedown = (e)=>{
+        if(!e.altKey || e.target.closest(".tok")) return;
+        const best = nearestTokInRun(run, e.clientX);
+        if(!best || best.classList.contains("locked")) return;
+        e.preventDefault();
+        startAltDrag(best);
+      };
+    });
+    $$("[data-action='qa-q-check']", paragraphEl).forEach(el=>{
+      el.onclick = ()=> updateQaQuestionSentence(el.dataset.pid, parseInt(el.dataset.sidx,10), {checked:true});
+    });
+    $$("[data-action='qa-q-edit']", paragraphEl).forEach(el=>{
+      el.onclick = ()=> updateQaQuestionSentence(el.dataset.pid, parseInt(el.dataset.sidx,10), {checked:false});
+    });
+
+    wireMiBoxRows(paragraphEl);
+
+    wireMiConnectHandles(paragraphEl);
+
+    $$(".para-sent-note .note-editable", paragraphEl).forEach(el=>{
+      const flush = ()=>{
+        clearTimeout(el._t);
+        updateParaSentence(el.dataset.pid, parseInt(el.dataset.sidx,10), { noteHtml: sanitizeNoteHtml(el.innerHTML) });
+      };
+      el.oninput = ()=>{ clearTimeout(el._t); el._t = setTimeout(flush, 500); };
+      el.onkeydown = (e)=>{ if(e.key==="Escape") e.target.blur(); };
+      el.onblur = ()=>{ clearTimeout(el._t); setTimeout(flush, 0); };
+      // Dragging the Note box's own resize handle changes this sentence row's height (and so where
+      // every box below it sits) without going through a state update/re-render -- redraw the
+      // connection curves straight off the live DOM whenever that happens, or they'd keep pointing at
+      // the old positions.
+      if(typeof ResizeObserver !== "undefined" && !state.paraLinearModel){
+        // Called directly (no extra requestAnimationFrame hop): ResizeObserver callbacks already fire
+        // after layout but before the next paint, so recomputing the curve right here, synchronously,
+        // keeps it glued to the dots for every intermediate frame of the drag instead of trailing one
+        // frame behind.
+        const ro = new ResizeObserver(()=>{
+          const p = getParagraph(state.currentParagraphId);
+          if(p && !state.paraLinearModel) redrawParaConnections(p);
+        });
+        ro.observe(el);
+      }
+    });
+    $$(".para-sent-note .note-toolbar button", paragraphEl).forEach(btn=>{
+      btn.addEventListener("mousedown", (e)=>{ e.preventDefault(); }); // keep the editable's selection
+      btn.addEventListener("click", ()=>{
+        const toolbar = btn.closest(".note-toolbar");
+        const pid = toolbar.dataset.pid, sidx = parseInt(toolbar.dataset.sidx,10);
+        const editable = paragraphEl.querySelector(`.para-sent-note .note-editable[data-pid="${cssEsc(pid)}"][data-sidx="${sidx}"]`);
+        if(!editable) return;
+        editable.focus();
+        const cmd = btn.dataset.cmd;
+        if(cmd === "highlight"){
+          const hlMap = { pink:"#ffcdf0", yellow:"#fff2a0", blue:"#bfe3ff", green:"#bdf0cf" };
+          const color = hlMap[btn.dataset.hl] || hlMap.pink;
+          document.execCommand("hiliteColor", false, color);
+        } else if(cmd === "clearhl"){
+          document.execCommand("hiliteColor", false, "transparent");
+        } else {
+          document.execCommand(cmd, false, null);
+        }
+        clearTimeout(editable._t);
+        editable._t = setTimeout(()=>{
+          updateParaSentence(pid, sidx, { noteHtml: sanitizeNoteHtml(editable.innerHTML) });
+        }, 300);
+      });
+    });
+
+    // Câu hỏi lẻ's single item-level Note (below both sections, not a per-sentence side panel) --
+    // same pattern as the per-sentence Note above, just addressed by pid alone and written to
+    // p.qaNoteHtml instead of a sentence's noteHtml.
+    $$(".qa-note-editable", paragraphEl).forEach(el=>{
+      const flush = ()=>{
+        clearTimeout(el._t);
+        updateParagraph(el.dataset.pid, { qaNoteHtml: sanitizeNoteHtml(el.innerHTML) });
+      };
+      el.oninput = ()=>{ clearTimeout(el._t); el._t = setTimeout(flush, 500); };
+      el.onkeydown = (e)=>{ if(e.key==="Escape") e.target.blur(); };
+      el.onblur = ()=>{ clearTimeout(el._t); setTimeout(flush, 0); };
+    });
+    $$(".qa-note-toolbar button", paragraphEl).forEach(btn=>{
+      btn.addEventListener("mousedown", (e)=>{ e.preventDefault(); });
+      btn.addEventListener("click", ()=>{
+        const toolbar = btn.closest(".note-toolbar");
+        const pid = toolbar.dataset.pid;
+        const editable = paragraphEl.querySelector(`.qa-note-editable[data-pid="${cssEsc(pid)}"]`);
+        if(!editable) return;
+        editable.focus();
+        const cmd = btn.dataset.cmd;
+        if(cmd === "highlight"){
+          const hlMap = { pink:"#ffcdf0", yellow:"#fff2a0", blue:"#bfe3ff", green:"#bdf0cf" };
+          const color = hlMap[btn.dataset.hl] || hlMap.pink;
+          document.execCommand("hiliteColor", false, color);
+        } else if(cmd === "clearhl"){
+          document.execCommand("hiliteColor", false, "transparent");
+        } else {
+          document.execCommand(cmd, false, null);
+        }
+        clearTimeout(editable._t);
+        editable._t = setTimeout(()=>{
+          updateParagraph(pid, { qaNoteHtml: sanitizeNoteHtml(editable.innerHTML) });
+        }, 300);
+      });
+    });
+  }
+
+  boot();
+})();
+</script>
